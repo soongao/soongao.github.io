@@ -9,8 +9,8 @@ tags: [OD, yolo]     # TAG names should always be lowercase
 # Yolo-v3
 
 ## Model structure
-[model structure code](/_posts/CV/ObjectDetection/yolo/yolo-v3/code-scratch/2024-10-06-YoloModelCode.md)
 ![model structure](/assets/img/yolo-v3-files/yolov3_model_structure.jpeg)
+- **`Yolo v3 Model Structure Code Snippet`**
 <details>
 <summary>模型结构summary可视化</summary>
 <pre><code>
@@ -361,7 +361,7 @@ Estimated Total Size (MB): 1410.53
 
 
 ## Range of xywh values and How they mapping
-[dataset code](/_posts/CV/ObjectDetection/yolo/yolo-v3/code-scratch/2024-10-06-YoloDatasetCode.md)
+- **`Yolo v3 Dataset Code Snippet`**
 - **ground truth -`preprocess`-> target**
   - 每一个ground truth bbox将与每种scale的一个anchor对应, 并用target记录
     - 如果落在大的grid中必然也在小的grid中, 一共与三个anchor关联,
@@ -393,8 +393,8 @@ Estimated Total Size (MB): 1410.53
 
 
 ## yolo-v3 loss function
-[loss function code](/_posts/CV/ObjectDetection/yolo/yolo-v3/code-scratch/2024-10-06-YoloLossCode.md)
 ![loss formula](/assets/img/yolo-v3-files/loss_formula.png)
+- **`Yolo v3 Loss Code Snippet`**
 - **noobj loss**
   - 负样本对应的grid计算noobj loss
     - 负样本c为0
