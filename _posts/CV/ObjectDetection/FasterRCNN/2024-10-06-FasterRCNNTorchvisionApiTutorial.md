@@ -1,8 +1,8 @@
 ---
 title: Faster rcnn Torchvision Api
 # date: YYYY-MM-DD HH:MM:SS +/-TTTT
-categories: [CV, OD]
-tags: [OD, faster rcnn]     # TAG names should always be lowercase
+categories: [CV, object detection]
+tags: [object detection, faster rcnn]     # TAG names should always be lowercase
 # toc: false
 ---
 

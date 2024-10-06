@@ -1,8 +1,8 @@
 ---
 title: Yolo v3 Model Structure Code Snippet
 # date: YYYY-MM-DD HH:MM:SS +/-TTTT
-categories: [CV, OD]
-tags: [OD, yolo]     # TAG names should always be lowercase
+categories: [CV, object detection]
+tags: [object detection, yolo]     # TAG names should always be lowercase
 # toc: false
 ---
 
