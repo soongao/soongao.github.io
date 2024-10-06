@@ -1,5 +1,12 @@
-## 使用steps
+---
+title: Torch Train with Steps
+# date: YYYY-MM-DD HH:MM:SS +/-TTTT
+categories: [CV, torch]
+tags: [torch]     # TAG names should always be lowercase
+# toc: false
+---
 
+## 使用steps
 
 ### forward
 ```python

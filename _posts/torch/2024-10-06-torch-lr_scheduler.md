@@ -1,3 +1,11 @@
+---
+title: Torch Learning rate scheduler
+# date: YYYY-MM-DD HH:MM:SS +/-TTTT
+categories: [CV, torch]
+tags: [torch]     # TAG names should always be lowercase
+# toc: false
+---
+
 ## Learning rate scheduler
 
 ##### 带warmup的learning rate随余弦函数变化的scheduler

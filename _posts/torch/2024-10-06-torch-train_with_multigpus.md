@@ -1,3 +1,11 @@
+---
+title: Torch Train with Mulit GPU
+# date: YYYY-MM-DD HH:MM:SS +/-TTTT
+categories: [CV, torch]
+tags: [torch]     # TAG names should always be lowercase
+# toc: false
+---
+
 ### 多GPU训练
 #### 1. nn.DataParallel
 ```python

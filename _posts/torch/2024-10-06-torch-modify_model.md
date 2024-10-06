@@ -1,3 +1,12 @@
+---
+title: Torch Modify Model
+# date: YYYY-MM-DD HH:MM:SS +/-TTTT
+categories: [CV, torch]
+tags: [torch]     # TAG names should always be lowercase
+# toc: false
+---
+
+
 # Modify Model
 
 #### **torch model is a callable object, u can visit it as a list or tuple**

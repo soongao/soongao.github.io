@@ -1,3 +1,11 @@
+---
+title: Torch Criterion
+# date: YYYY-MM-DD HH:MM:SS +/-TTTT
+categories: [CV, torch]
+tags: [torch]     # TAG names should always be lowercase
+# toc: false
+---
+
 ## Criterion
 
 #### LabelSmoothedCrossEntropy

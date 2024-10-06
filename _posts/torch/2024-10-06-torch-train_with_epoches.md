@@ -1,4 +1,12 @@
-## 使用epoches
+---
+title: Torch Train with Epoch
+# date: YYYY-MM-DD HH:MM:SS +/-TTTT
+categories: [CV, torch]
+tags: [torch]     # TAG names should always be lowercase
+# toc: false
+---
+
+## 使用epoch
 
 ### train
 ```python
