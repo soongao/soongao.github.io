@@ -75,7 +75,7 @@ private:
 ```
 
 ## CSession achieve
-- 划分成了两个线程, 读线程和写线程, 两个线程相互独立, 实现了全双工
+### 划分成了两个线程, 读线程和写线程, 两个线程相互独立, 实现了全双工
 ```cpp
 void CSession::Start() {
 	memset(m_data, 0, MAX_LEN);
@@ -141,8 +141,7 @@ void CSession::HandleWrite(const boost::system::error_code& error, std::shared_p
 }
 ```
 
-## CServer header file
-- nothing changed
+## CServer header file (nothing changed)
 ```cpp
 class CServer
 {
@@ -162,8 +161,7 @@ private:
 };
 ```
 
-## CServer achieve
-- nothing changed
+## CServer achieve (nothing changed)
 ```cpp
 CServer::CServer(boost::asio::io_context& ioc, unsigned short port)
 	: m_ioc(ioc), m_acceptor(ioc, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port)) {
