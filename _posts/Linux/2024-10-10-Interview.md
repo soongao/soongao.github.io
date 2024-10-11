@@ -23,3 +23,13 @@ tags: [Linux]     # TAG names should always be lowercase
 > - awk -F `split flag` '{print $`num query`}'
 >   - 分割字符串, 然后将query部分打印出来
 > - **netstat -an \| grep ESTABLISHED \| awk -F " " '{print $5}' \| cut -d ':' -f 1 \| sort \| uniq -c \| sort -nr**
+
+## 如果忘记了mysql5.7数据库的ROOT用户的密码, 如何找回?(滴滴)
+> - 修改/etc/my.cnf
+>   - 添加skip-grant-tables
+> - 重启mysqld服务, systemctl restart mysqld
+> - 此时可以无密码登录root, mysql -u root -p
+> - 在mysql数据库中, 有一张user表, 其中有字段authentication_string, 这个字段就保存了密码
+>   - update user set authentication_string=password('new passwd') where user=root;
+> - 然后刷新, flush privileges;
+> - 删除/etc/my.cnf下添加的skip-grant-tables
