@@ -15,11 +15,11 @@ tags: [Linux]     # TAG names should always be lowercase
 > - sort (从小到大排序) 
 >   - -nr (从大到小排序)
 > - uniq -c 去重 + 统计次数
-> - **cat t.log | cut -d '/' -f 3 | sort | uniq -c | sort -nr**
+> - **cat t.log \| cut -d '/' -f 3 \| sort \| uniq -c \| sort -nr**
 
 ## 统计连接到服务器的各个ip情况, 并按连接数从大到小排序(腾讯)
 - 可能有很多ip连接到服务器上, 一个ip可能有不止一个连接
 > - netstat -an 查看网络连接
 > - awk -F `split flag` '{print $`num query`}'
 >   - 分割字符串, 然后将query部分打印出来
-> - **netstat -an | grep ESTABLISHED | awk -F " " '{print $5}' | cut -d ':' -f 1 | sort | uniq -c | sort -nr**
+> - **netstat -an \| grep ESTABLISHED \| awk -F " " '{print $5}' \| cut -d ':' -f 1 \| sort \| uniq -c \| sort -nr**
