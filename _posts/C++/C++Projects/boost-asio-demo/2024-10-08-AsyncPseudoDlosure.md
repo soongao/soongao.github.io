@@ -2,7 +2,7 @@
 title: Boost Asio Async Demo perfect by Pseudo Closure
 # date: YYYY-MM-DD HH:MM:SS +/-TTTT
 categories: [C++, asio]
-tags: [C++, websocket]     # TAG names should always be lowercase
+tags: [C++, webserver]     # TAG names should always be lowercase
 # toc: false
 ---
 

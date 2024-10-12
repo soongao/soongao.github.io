@@ -2,7 +2,7 @@
 title: Boost Asio Async Full Duplex Server
 # date: YYYY-MM-DD HH:MM:SS +/-TTTT
 categories: [C++, asio]
-tags: [C++, websocket]     # TAG names should always be lowercase
+tags: [C++, webserver]     # TAG names should always be lowercase
 # toc: false
 ---
 
