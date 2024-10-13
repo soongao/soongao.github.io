@@ -54,3 +54,11 @@ tags: [Linux]     # TAG names should always be lowercase
 > - ngx_http_upstream_module模块: 实现定义后端服务器列表
 > - ngx_cache_purge: 实现缓存清除功能
 
+
+## 如果你是系统管理员, 在进行Linux系统权限划分时, 应考虑哪些因素?(腾讯)
+- 阐述Linux权限的主要对象
+- 一些实际情境下的原则
+  - 注意权限分离: 如Linux系统权限与数据库权限不要在同一个部门
+  - 最小权限原则
+  - 减少使用root用户: 尽量用普通用户+sudo
+  - 重要系统文件使用chattr锁定, 需要操作时再打开
