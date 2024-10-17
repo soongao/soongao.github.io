@@ -114,3 +114,10 @@ textual_context = textual_context.expand(x.shape[1], -1, -1).permute(1, 0, 2).ha
 # layer learnable tokens
 x = torch.cat([prefix, textual_context, suffix], dim=0)
 ```
+
+## Thoughts
+- 只有zero shot泛化能力, 实际上异常不止是damaged object, 例如电子元器件多了或者少了一点东西, 这也是异常, 而要检测这种异常few shot的能力是必要的
+  - WinCLIP, anomalyGPT等文章中都将模型架构设计成了zero和few shot 都有的架构, {??这两个能力是有一些割裂, 使用few shot时, zero shot的部分似乎作用就不大了??}
+- 将异常检测试做全局分类和局部分割, 那是否融合SAM这种分割大模型来做分割呢
+- prompt与对象语义无关, 但是只划分了object和damaged object, 可不可以用low level的描述呢, {??裂痕, 洞, 等??}
+  - SAA提出了4种prompt, 其中有领域专家知识来描述具体的缺陷
