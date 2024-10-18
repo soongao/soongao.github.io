@@ -57,8 +57,33 @@ tags: [Linux]     # TAG names should always be lowercase
 
 ## 如果你是系统管理员, 在进行Linux系统权限划分时, 应考虑哪些因素?(腾讯)
 - 阐述Linux权限的主要对象
+  - user, group, other
+  - 文件和目录的rwx具体对应操作
 - 一些实际情境下的原则
   - 注意权限分离: 如Linux系统权限与数据库权限不要在同一个部门
   - 最小权限原则
   - 减少使用root用户: 尽量用普通用户+sudo
   - 重要系统文件使用chattr锁定, 需要操作时再打开
+
+## 目录和文件权限对应具体操作
+- 目录: r: (ls); w: (rm, touch等); x: (cd)
+- 文件: r: (cat等); w: (vim等); x: 可执行文件
+#### 用户tom对目录/home/test有执行和读写权限, /home/test/hello.java是只读文件, 问tom对hello.java文件能读吗? 能修改吗? 能删除吗?
+- 对目录有执行权限, 对文件只有读权限
+  - 能读, 不能修改
+- 对目录有写权限 
+  - 能删除
+
+#### 用户tom对目录/home/test只有读写权限, /home/test/hello.java是只读文件, 问tom对hello.java文件能读吗? 能修改吗? 能删除吗?
+- 对目录只有执行权限, 无法进入目录
+  - 不能读, 不能修改, 不能删除
+
+#### 用户tom对目录/home/test只有执行权限, /home/test/hello.java是只读文件, 问tom对hello.java文件能读吗? 能修改吗? 能删除吗?
+- 对目录有执行权限, 对文件只有读权限
+  - 能读, 不能修改, 不能删除
+
+#### 用户tom对目录/home/test只有执行和写权限, /home/test/hello.java是只读文件, 问tom对hello.java文件能读吗? 能修改吗? 能删除吗?
+- 对目录有执行权限, 对文件只有读权限
+  - 能读, 不能修改
+- 对目录有写权限
+  - 能删除
