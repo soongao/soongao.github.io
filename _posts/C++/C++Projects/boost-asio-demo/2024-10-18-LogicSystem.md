@@ -197,3 +197,29 @@ void LogicSystem::EchoCallBack(std::shared_ptr<CSession> session, short msg_id, 
 	session->Send(msg_data, msg_id);
 }
 ```
+
+## 服务器启动和退出
+```cpp
+int main() {
+	try {
+		std::cout << "server run success\n";
+		boost::asio::io_context ioc;
+		// 注册要监听的信号
+		boost::asio::signal_set signals(ioc, SIGINT, SIGTERM);
+		// 异步等待信号, 如果信号触发, server退出
+		signals.async_wait([&ioc](auto, auto) {
+			ioc.stop();
+		});
+		// server run
+		// 因为是异步等待信号, 因此主线程server会正常启动
+		CServer service(ioc, 10086);
+		ioc.run();
+		std::cout << "server closed\n";
+	}
+	catch (std::exception& e) {
+		std::cerr << "Exception: " << e.what() << "\n";
+	}
+
+	return 0;
+}
+```
