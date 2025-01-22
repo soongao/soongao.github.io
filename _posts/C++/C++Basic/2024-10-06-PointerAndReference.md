@@ -83,19 +83,19 @@ ptr = arr = 0x00AFFDBC
    - int* ptr = &num;
 2. 引用
    - 用在函数参数传递中, 通过引用传值等价于将真正的变量传入了函数中, 不使用引用传值等价于将变量的值传入函数中
-    ```cpp
-    void add(int x) {
-        x += 1;
-    }
+        ```cpp
+        void add(int x) {
+            x += 1;
+        }
 
-    int a = 1;
-	add(a); // 调用后, a依然为1
-    ```
-    ```cpp
-    void add(int &x){
-        x += 1;
-    }
+        int a = 1;
+        add(a); // 调用后, a依然为1
+        ```
+        ```cpp
+        void add(int &x){
+            x += 1;
+        }
 
-    int a = 1;
-	add(a); // 调用后, a等于2
-    ```
+        int a = 1;
+        add(a); // 调用后, a等于2
+        ```
