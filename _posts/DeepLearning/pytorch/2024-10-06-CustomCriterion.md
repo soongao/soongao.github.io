@@ -1,7 +1,7 @@
 ---
 title: Torch Custom Criterion
 # date: YYYY-MM-DD HH:MM:SS +/-TTTT
-categories: [deeplearning, torch]
+categories: [dl, torch]
 tags: [torch]     # TAG names should always be lowercase
 # toc: false
 ---

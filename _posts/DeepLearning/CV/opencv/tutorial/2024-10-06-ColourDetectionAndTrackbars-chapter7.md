@@ -1,8 +1,8 @@
 ---
 title: Colour Detection And Trackbars - opencv cv2 tutorial chapter7 
 # date: YYYY-MM-DD HH:MM:SS +/-TTTT
-categories: [CV, opencv]
-tags: [cv2]     # TAG names should always be lowercase
+categories: [dl, opencv]
+tags: [opencv]     # TAG names should always be lowercase
 # toc: false
 ---
 

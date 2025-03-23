@@ -1,7 +1,7 @@
 ---
 title: Cowboy Detection Jupyter Faster rcnn
 # date: YYYY-MM-DD HH:MM:SS +/-TTTT
-categories: [CV, object detection]
+categories: [dl, object detection]
 tags: [object detection, faster rcnn]     # TAG names should always be lowercase
 # toc: false
 ---

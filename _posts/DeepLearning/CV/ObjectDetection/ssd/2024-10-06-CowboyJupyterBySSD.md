@@ -1,7 +1,7 @@
 ---
 title: Cowboy Detection Jupyter SSD
 # date: YYYY-MM-DD HH:MM:SS +/-TTTT
-categories: [CV, object detection]
+categories: [dl, object detection]
 tags: [object detection, ssd]     # TAG names should always be lowercase
 # toc: false
 ---

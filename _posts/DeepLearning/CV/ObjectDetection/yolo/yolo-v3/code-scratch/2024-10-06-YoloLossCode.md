@@ -1,7 +1,7 @@
 ---
 title: Yolo v3 Loss Code Snippet
 # date: YYYY-MM-DD HH:MM:SS +/-TTTT
-categories: [CV, object detection]
+categories: [dl, object detection]
 tags: [object detection, yolo]     # TAG names should always be lowercase
 # toc: false
 ---
