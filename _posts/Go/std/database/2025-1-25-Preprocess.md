@@ -1,8 +1,8 @@
 ---
 title: Go SQL Preprocess
 # date: YYYY-MM-DD HH:MM:SS +/-TTTT
-categories: [Go, mysql]
-tags: [Go, mysql]     # TAG names should always be lowercase
+categories: [Go, std]
+tags: [mysql]     # TAG names should always be lowercase
 # toc: false
 ---
 
