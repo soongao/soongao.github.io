@@ -1,7 +1,7 @@
 ---
 title: Linux Interview
 # date: YYYY-MM-DD HH:MM:SS +/-TTTT
-categories: [Linux, interview]
+categories: [Linux, usage]
 tags: [Linux]     # TAG names should always be lowercase
 # toc: false
 ---
