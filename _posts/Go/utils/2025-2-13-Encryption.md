@@ -1,12 +1,12 @@
 ---
-title: Go Web dev password encryption
+title: Go password encryption
 # date: YYYY-MM-DD HH:MM:SS +/-TTTT
-categories: [Go, dev]
-tags: [Go, dev]     # TAG names should always be lowercase
+categories: [Go, utils]
+tags: [Go, utils]     # TAG names should always be lowercase
 # toc: false
 ---
 
-# Go Web dev password encryption
+# Go password encryption
 ## 密码加密
 ```go
 import "golang.org/x/crypto/bcrypt"

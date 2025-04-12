@@ -1,8 +1,8 @@
 ---
 title: Go Middlewares Auth
 # date: YYYY-MM-DD HH:MM:SS +/-TTTT
-categories: [Go, dev]
-tags: [Go, dev]     # TAG names should always be lowercase
+categories: [Go, utils]
+tags: [Go, utils]     # TAG names should always be lowercase
 # toc: false
 ---
 
