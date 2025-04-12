@@ -16,6 +16,7 @@ tags: [redis]     # TAG names should always be lowercase
 
 ## string
 - sds (simple dynamic string)
+
 ### 源码
 ```c
 typedef char *sds;
@@ -33,6 +34,7 @@ struct __attribute__ ((__packed__)) sdshdr_x {
 - 双向链表
 - list经过版本演变, list node不断在更新
   - adlist (val: void*) -> quicklist (val: ziplist) -> quicklist (val: listpack)
+
 ### 源码
 #### adlist
 ```c
@@ -81,6 +83,7 @@ typedef struct quicklistNode {
     - d->ht[0].used >= d->ht[0].size && dict_can_resize
   - 负载因子>=5, 无论有没有进行aof重新或rdb快照, 都rehash
     - d->ht[0].used/d->ht[0].size > dict_force_resize_ratio (dict_force_resize_ratio = 5)
+
 ### 源码
 ```c
 typedef struct dictEntry {
@@ -108,7 +111,9 @@ typedef struct dict {
 ```
 
 ## zset
-- 跳表
+- 跳表 + hash table
+  - 核心操作由跳表完成
+
 ### 源码
 ```c
 /* ZSETs use a specialized version of Skiplists */
