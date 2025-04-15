@@ -140,6 +140,8 @@ typedef struct zset {
 ```
 
 ## ziplist/listpack
+- ziplist
+  - <zlbytes> <zltail> <zllen> <entry> <entry> ... <entry> <zlend>
 - 都是使用一块连续的内存空间来紧凑的保存数据
   - 类似于一个数组+head头信息, 但是数组中的元素不是固定类型长度, 而是根据具体的内容确定空间
 - ziplist的节点保存了前一节点的长度用于向前遍历
