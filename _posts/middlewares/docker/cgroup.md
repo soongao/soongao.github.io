@@ -1,0 +1,49 @@
+---
+title: Docker - Cgroup
+# date: YYYY-MM-DD HH:MM:SS +/-TTTT
+categories: [middlerwares, docker]
+tags: [docker]     # TAG names should always be lowercase
+# toc: false
+---
+
+# Docker - Cgroup
+- linux的cgroup提供了对一组进程及其将来子进程的资源限制、控制和统计能力
+  - 这些资源包括CPU、内存、存储、网络等
+- 也就是通过cgroup可以对每个容器使用的硬件资源进行限制
+
+## Linux Cgroup
+- cgroup是对进程分组管理的一种机制
+  - 一个cgroup包含一组进程, 并可以在这个cgroup上增加Linux subsystem的各种参数配置, 将一组进程和一组subsystem的系统参数关联起来
+- subsystem是一组资源控制的模块
+  - 每个subsystem会关联到定义了相应限制的cgroup上, 并对这个cgroup中的进程做相应的限制和控制
+- hierarchy的功能是把一组cgroup串成一个树状的结构
+  - 通过这种树状结构, cgroups可以做到继承
+- Linux通过虚拟文件系统实现cgroup
+  - /sys/fs/cgroup
+
+### ls /sys/fs/cgroup
+```text
+blkio       cpuacct     devices     hugetlb     misc        net_prio    pids        unified
+cpu         cpuset      freezer     memory      net_cls     perf_event  rdma
+```
+
+### 三个组件间的关系
+- 在/sys/fs/cgroup下, 每个文件夹其实就对应了一种资源
+  - 以cpu为例
+- 在cpu文件夹下有subsystem相关的配置
+  - tasks中的内容表示受这个subsys限制的PID
+  - cpu.cfs_quota_us表示cpu占用率
+- 如果在这个文件夹下创建一个自己的文件夹
+  - 这就相当于在hierarchy下创建了一个子cgroup, 并且会继承父节点的配置
+  - 这个文件夹会自己创建配置文件, 可以对这个子cgroup再进行cpu subsystem配置
+
+## go操作cgroup示例
+```go
+// 对mem进行限制示例
+// 在默认挂载了memory subsyetem的hierarchy上创建cgroup
+os.Mkdir(path.Join("/sys/fs/cgroup/memory", "my_mem_limit"), 0755)
+// 将容器进程加入到cgroup中, 将容器PID写入到tasks文件中
+io.WriteFile(path.Join("/sys/fs/cgroup/memory", "my_mem_limit", "tasks"), []byte(strconv.Itoa(cmd.Process.Pid)), 0644)
+// 限制容器进程memory使用, 将配置信息写入memory.limit_in_bytes文件中
+io.WriteFile(path.Join("/sys/fs/cgroup/memory", "my_mem_limit", "memory.limit_in_bytes"), []byte("100m"), 0644)
+```

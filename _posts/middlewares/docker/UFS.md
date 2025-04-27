@@ -1,0 +1,39 @@
+---
+title: Docker - UFS
+# date: YYYY-MM-DD HH:MM:SS +/-TTTT
+categories: [middlerwares, docker]
+tags: [docker]     # TAG names should always be lowercase
+# toc: false
+---
+
+# Docker - UFS
+- Union File System(UnionFS), 是一种为Linux 、FreeBSD和NetBSD操作系统设计的, 把其他文件系统联合到一个联合挂载点的文件系统服务
+
+## Linux UFS
+- 使用branch把不同文件系统的文件和目录"透明地"覆盖, 形成一个单一且一致的文件系统
+  - 这些branch是read-only或者read-write的
+- 使用写时复制技术(Copy on Write, CoW)使得虚拟后的FS看起来可以对任何文件进行操作
+  - 对于只读文件, 其实是复制了一份文件, 并没有改变原有的文件
+- 使用UFS技术使得docker中的一个image可以创建多个容器
+  - 将image layer和container layer通过UFS挂载成一个虚拟文件系统
+  - 容器内看起来就像拥有一个自己的FS, 但实际上在容器中进行修改时, 不会影响image中真正的文件
+- 在namespace中提到伪造容器根目录, 根目录中的内容其实就需要去构建一个UFS给容器
+  - 不然即使切换了容器根目录, 根目录中没有如/bin等文件, 容器内也做不了任何事情
+
+## overlay2
+- 旧版docker使用AUFS存储image和container, 如今docker使用overlayFS(overlay2版本)
+- upperdir代表read-write file
+- lowerdir代表read-only file
+
+### shell cmd
+```shell
+mount -t overlay overlay -o lowerdir=\<lower1-dir\>:\<lower2-dir\>,upperdir=\<upper-dir\>,workdir=\<work-dir\> \<merger-dir\>
+# workdir 文件系统的工作基础目录, 挂载后内容会被情况, 在使用过程中对用户不可见
+```
+
+### go操作
+```go
+syscall.Mount("overlay", mntPath, "overlay", 0,
+            fmt.Sprintf("upperdir=%s,lowerdir=%s,workdir=%s",
+                containerPath, imagePath, workDirPath))
+```
