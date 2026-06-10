@@ -114,6 +114,7 @@ if (querySource === 'session_memory' || querySource === 'compact') {
 }
 ```
 ###### 压缩后的消息
+![auto compact msg](/soongao.github.io/assets/img/agent-files/claudecode/context/auto_compact_msg.webp)
 - 存在Lost in the Middle, 所以全量压缩, 最近的N轮会话也不保留
 	- 最近对话中的关键上下文通过`附件`形式保留
 - 压缩后整个对话历史重写成4段结构
@@ -152,6 +153,7 @@ CRITICAL: Respond with TEXT ONLY. Do NOT call any tools.
 - Your entire response must be plain text.
 ```
 - 摘要输出格式
+![summary prompt](/soongao.github.io/assets/img/agent-files/claudecode/context/summary_prompt.webp)
 ```md
 <analysis>
 [模型的推理草稿，分析对话哪些重要]

@@ -7,6 +7,7 @@ tags: [Agent, Claude Code, CLAUDEMD]     # TAG names should always be lowercase
 ---
 
 ### CLAUDE.md 最佳实践/维护
+![claude.md folder](/soongao.github.io/assets/img/agent-files/claudecode/claudemd/claudemd_fold.webp)
 #### 编写实践推荐
 - 每个md不超过200行
 - 不写无效规则
