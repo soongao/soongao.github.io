@@ -1,0 +1,118 @@
+---
+title: Claude Code - CLAUDE MD
+# date: YYYY-MM-DD HH:MM:SS +/-TTTT
+categories: [Agent, Claude Code]
+tags: [Agent, Claude Code, CLAUDEMD]     # TAG names should always be lowercase
+# toc: false
+---
+
+### CLAUDE.md 最佳实践/维护
+#### 编写实践推荐
+- 每个md不超过200行
+- 不写无效规则
+	- 复述型 (复制完整文档等)
+	- 愿望型 (希望测试覆盖率90%等)
+	- 术语表型 (通用术语等)
+- 写有效规则
+	- 短、具体、可验证、告诉模型为什么要遵守这条规则(等于告诉模型规则的边界)
+- 持续更新
+	- 犯错就增加防御规则, 同时记得要删除老规则
+		- 错误的规则比没有规则更糟
+#### 加载CLAUDE.md
+```ts
+const dirs: string[] = []
+const originalCwd = getOriginalCwd()
+let currentDir = originalCwd
+// 爬到根路径
+while (currentDir !== parse(currentDir).root) {
+  dirs.push(currentDir)
+  currentDir = dirname(currentDir)
+}
+// 反向遍历每一层的 CLAUDE.md 和 .claude/CLAUDE.md
+```
+#### 分层 & 分目录
+- 长了拆到 .claude/rules/ 目录
+- 高频工作流写到 commands/
+- 可复用能力封装成 skills/
+- commands和skills都是splash command
+```text
+~/.claude/
+└── CLAUDE.md          # 全局：用中文回复我、commit message 写中文
+
+my-project/
+├── CLAUDE.md          # 项目根：技术栈、目录结构、命令、硬约束
+├── frontend/
+│   ├── CLAUDE.md      # 前端模块：组件用函数式、状态管理用 Zustand
+│   └── src/
+└── backend/
+    ├── CLAUDE.md      # 后端模块：API 用 RESTful 风格、错误统一抛 AppError
+    └── src/
+```
+```text
+.claude/
+└── rules/
+    ├── testing.md       # 测试规则
+    ├── api-design.md    # 接口设计规则
+    ├── security.md      # 安全规则
+    └── ui-components.md # UI 组件约定
+```
+#### Demo
+- rules demo
+	- 带yaml的md文件
+	- frontmatter中的paths告诉模型只有在改相关文件才加载
+```md
+---
+paths: ["src/api/**/*.ts"]
+---
+# 接口设计规则
+- 所有接口走 RESTful 命名（GET / POST / PUT / DELETE）
+- 返回值统一用 { data, error } 格式
+- 错误码用 4 位数字（如 1001、1002），别用字符串
+```
+##### 6段式建议
+```md
+# CLAUDE.md
+
+## 1. Project Overview
+（2-3 行讲清这是个啥项目，技术栈 + 定位）
+- 这是一个面向 B 端的订单管理系统
+- 技术栈：TypeScript + Next.js 14 + PostgreSQL
+- 部署：Vercel + Supabase
+
+## 2. Commands
+（最常用的几个命令，Claude 会直接执行）
+- 安装依赖：`pnpm install`
+- 启动开发：`pnpm dev`
+- 跑测试：`pnpm test`
+- 类型检查：`pnpm typecheck`
+- Lint：`pnpm lint`
+
+## 3. Architecture
+（三句话讲完架构，不要展开）
+- 前端页面在 app/（App Router）
+- API 路由在 app/api/
+- 数据库 schema 在 prisma/schema.prisma
+- 详细架构见 docs/architecture.md
+
+## 4. Conventions
+（团队真实在用的约定）
+- 组件文件用 PascalCase（UserCard.tsx）
+- 工具函数用 kebab-case（format-date.ts）
+- API 返回统一用 { data, error } 格式
+- 错误处理用 Result type，不要 throw
+
+## 5. Hard Constraints
+（这部分要严，Claude 越界一次就要补）
+- 不要写入 production 数据库（去年事故）
+- 不要修改 prisma/migrations/ 下已经合入的 migration
+- 不要把 .env 文件加入 git
+- 所有 API 路由必须过 requireAuth() middleware
+
+## 6. Gotchas
+（每个新人都踩过的坑）
+- 跑 dev 之前要先 pnpm db:push 同步 schema
+- macOS 上 Prisma 偶发崩溃，重启 dev server 就好
+- Vercel 部署日志在 dashboard 里看，不在终端
+```
+- AGENTS.md 和 CLAUDE.md
+	- 可以通过@AGENTS.md/@CLAUDE.md使两个互通, 不用写两遍
