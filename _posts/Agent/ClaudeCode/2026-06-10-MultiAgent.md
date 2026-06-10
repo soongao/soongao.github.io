@@ -168,6 +168,7 @@ export const FORK_AGENT = {
 ```
 
 - fork 和 coordinate互斥
+
 ```ts
 // src/tools/AgentTool/forkSubagent.ts:32
 export function isForkSubagentEnabled(): boolean {
@@ -179,8 +180,10 @@ export function isForkSubagentEnabled(): boolean {
 	return false
 }
 ```
+
 #### Coordinator-Worker
 - coordinate模式要显式打开
+
 ```ts
 // src/coordinator/coordinatorMode.ts:36
 export function isCoordinatorMode(): boolean {
@@ -192,7 +195,8 @@ export function isCoordinatorMode(): boolean {
 ```
 
 - 主agent只做`派 worker`, `收结果`, `合成答案`; system prompt支持
-```plain
+
+```md
 You are Claude Code, an AI assistant that orchestrates software engineering 
 tasks across multiple workers.
 
@@ -206,6 +210,7 @@ You are a **coordinator**. Your job is to:
 
 你的身份是协调者，你的工作是指挥 worker 去做研究、实现、验证，然后自己合成结果跟用户交流。能自己回答的问题不要派人去做。
 ```
+
 - coordinator的builtin工具
 ```ts
 // src/coordinator/coordinatorMode.ts:29
@@ -216,8 +221,9 @@ const INTERNAL_WORKER_TOOLS = new Set([
 	SYNTHETIC_OUTPUT_TOOL_NAME,  // 合成最终输出给用户
 ])
 ```
+
 - 支持并行创建worker, 部分system prompt
-```plain
+```md
 Parallelism is your superpower. Workers are async. Launch independent workers concurrently whenever possible, don't serialize work that can run simultaneously and look for opportunities to fan out.
 
 并行是你的超能力，worker 全是异步的，能并行的绝不串行，多找机会一口气派一堆出去。

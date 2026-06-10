@@ -91,6 +91,7 @@ if (feature('CONTEXT_COLLAPSE') && contextCollapse) {
 ##### Auto-Compact (全量摘要): 全量重写对话, 重新生成新消息链
 - 强制13K缓冲区: 有效窗口 - 13K缓冲区 = 触发阈值
 	- Anthropic跑了数据统计, P99.99的摘要长度不会超过留13K token长度
+  
 ```ts
 export const AUTOCOMPACT_BUFFER_TOKENS = 13_000
 
@@ -100,6 +101,7 @@ function getAutoCompactThreshold(model: string): number {
   return effectiveContextWindow - AUTOCOMPACT_BUFFER_TOKENS
 }
 ```
+
 - 手动和自动触发
 	- 手动触发: /compact
 	- 自动触发: suppressFollowUpQuestions=True, 不允许在摘要生成后继续提问
@@ -107,6 +109,7 @@ function getAutoCompactThreshold(model: string): number {
 	- circuit breaker: auto-compact连续失败3次, 停止重试, 熔断
 	- 防止摘要生成递归
 		- 摘要任务是由sub agent去跑的, 防止sub agent再触发auto-compact
+
 ```ts
 // 当压缩任务跑起来时被标记为compact, 会话记忆任务被标记成session_memory, 这两个来源的消息不回被再压缩
 if (querySource === 'session_memory' || querySource === 'compact') {
@@ -131,14 +134,17 @@ export function buildPostCompactMessages(result: CompactionResult): Message[] {
   ]
 }
 ```
+
 - auto-compact之前会再做一次microcompact作为预处理
 - 恢复策略 (附件)
 	- 最多重新加载5个文件; 每个文件最多5k token; 总量不超过50k token
+
 ```ts
 export const POST_COMPACT_MAX_TOKENS_PER_FILE = 5_000
 export const POST_COMPACT_TOKEN_BUDGET = 50_000
 export const POST_COMPACT_MAX_FILES_TO_RESTORE = 5
 ```
+
 - system prompt
 	- 不压缩, 通过buildEffectiveSystemPrompt()重新构造
 - 异步任务
@@ -147,7 +153,7 @@ export const POST_COMPACT_MAX_FILES_TO_RESTORE = 5
 	- 不被压缩, 清空缓存, 下轮对话通过getUserContext()重新读取
 - 摘要任务prompt
 
-```plain
+```md
 CRITICAL: Respond with TEXT ONLY. Do NOT call any tools.
 - Do NOT use Read, Bash, Grep, Glob, Edit, Write, or ANY other tool.
 - Tool calls will be REJECTED and will waste your only turn.
@@ -156,7 +162,8 @@ CRITICAL: Respond with TEXT ONLY. Do NOT call any tools.
 
 - 摘要输出格式
 ![summary prompt](/assets/img/agent-files/claudecode/context/summary_prompt.webp)
-```plain
+
+```md
 <analysis>
 [模型的推理草稿，分析对话哪些重要]
 </analysis>
@@ -176,6 +183,7 @@ CRITICAL: Respond with TEXT ONLY. Do NOT call any tools.
 9. Optional Next Step（下一步建议）
 </summary>
 ```
+
 - 使用当前对话模型进行摘要任务
 	- 保证摘要质量(不用小模型)
 	- 能复用prompt cache
