@@ -7,7 +7,7 @@ tags: [Agent, Claude Code, Multi Agent]     # TAG names should always be lowerca
 ---
 
 ### Multi Agent
-![multi agent overview](/soongao.github.io/assets/img/agent-files/claudecode/multiagent/overview.webp)
+![multi agent overview](/assets/img/agent-files/claudecode/multiagent/overview.webp)
 #### Sub-Agent
 ##### 隔离
 ###### tool隔离

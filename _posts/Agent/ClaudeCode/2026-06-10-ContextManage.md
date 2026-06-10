@@ -8,7 +8,7 @@ tags: [Agent, Claude Code, Context]     # TAG names should always be lowercase
 
 ### Context Manage
 #### Context Compact
-![contex compact overall](/soongao.github.io/assets/img/agent-files/claudecode/context/context_overall.webp)
+![contex compact overall](/assets/img/agent-files/claudecode/context/context_overall.webp)
 ##### 大结果存磁盘
 - 单个工具结果过大, 将完整内容写到磁盘上, 消息里只留下一个很小的摘要
 - 消息级总量控制, 如果一条消息里所有工具结果总大小过大, 将最大的几个存磁盘
@@ -114,7 +114,7 @@ if (querySource === 'session_memory' || querySource === 'compact') {
 }
 ```
 ###### 压缩后的消息
-![auto compact msg](/soongao.github.io/assets/img/agent-files/claudecode/context/auto_compact_msg.webp)
+![auto compact msg](/assets/img/agent-files/claudecode/context/auto_compact_msg.webp)
 - 存在Lost in the Middle, 所以全量压缩, 最近的N轮会话也不保留
 	- 最近对话中的关键上下文通过`附件`形式保留
 - 压缩后整个对话历史重写成4段结构
@@ -153,7 +153,7 @@ CRITICAL: Respond with TEXT ONLY. Do NOT call any tools.
 - Your entire response must be plain text.
 ```
 - 摘要输出格式
-![summary prompt](/soongao.github.io/assets/img/agent-files/claudecode/context/summary_prompt.webp)
+![summary prompt](/assets/img/agent-files/claudecode/context/summary_prompt.webp)
 ```md
 <analysis>
 [模型的推理草稿，分析对话哪些重要]
