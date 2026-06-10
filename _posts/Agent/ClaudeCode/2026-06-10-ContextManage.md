@@ -146,15 +146,17 @@ export const POST_COMPACT_MAX_FILES_TO_RESTORE = 5
 - CLAUDE.md
 	- 不被压缩, 清空缓存, 下轮对话通过getUserContext()重新读取
 - 摘要任务prompt
-```md
+
+```plain
 CRITICAL: Respond with TEXT ONLY. Do NOT call any tools.
 - Do NOT use Read, Bash, Grep, Glob, Edit, Write, or ANY other tool.
 - Tool calls will be REJECTED and will waste your only turn.
 - Your entire response must be plain text.
 ```
+
 - 摘要输出格式
 ![summary prompt](/assets/img/agent-files/claudecode/context/summary_prompt.webp)
-```md
+```plain
 <analysis>
 [模型的推理草稿，分析对话哪些重要]
 </analysis>

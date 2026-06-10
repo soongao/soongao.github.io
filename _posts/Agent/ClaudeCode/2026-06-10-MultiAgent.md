@@ -74,6 +74,7 @@ export type LocalAgentTaskState = TaskStateBase & {
 	messages?: Message[];
 };
 ```
+
 - 消息投递
 ```ts
 // src/tools/SendMessageTool/SendMessageTool.ts:800
@@ -87,6 +88,7 @@ if (isLocalAgentTask(task) && !isMainSessionTask(task)) {
 	const result = await resumeAgentBackground({ agentId, prompt: input.message, ... })
 }
 ```
+
 ```ts
 // src/tasks/LocalAgentTask/LocalAgentTask.tsx:162
 export function queuePendingMessage(taskId, msg, setAppState): void {
@@ -164,6 +166,7 @@ export const FORK_AGENT = {
 	getSystemPrompt: () => '', // 返回空串！
 } satisfies BuiltInAgentDefinition
 ```
+
 - fork 和 coordinate互斥
 ```ts
 // src/tools/AgentTool/forkSubagent.ts:32
@@ -187,8 +190,9 @@ export function isCoordinatorMode(): boolean {
   return false
 }
 ```
+
 - 主agent只做`派 worker`, `收结果`, `合成答案`; system prompt支持
-```md
+```plain
 You are Claude Code, an AI assistant that orchestrates software engineering 
 tasks across multiple workers.
 
@@ -213,7 +217,7 @@ const INTERNAL_WORKER_TOOLS = new Set([
 ])
 ```
 - 支持并行创建worker, 部分system prompt
-```md
+```plain
 Parallelism is your superpower. Workers are async. Launch independent workers concurrently whenever possible, don't serialize work that can run simultaneously and look for opportunities to fan out.
 
 并行是你的超能力，worker 全是异步的，能并行的绝不串行，多找机会一口气派一堆出去。
