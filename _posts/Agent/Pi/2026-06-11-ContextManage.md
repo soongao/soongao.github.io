@@ -2,7 +2,7 @@
 title: Pi - Context Manage
 # date: YYYY-MM-DD HH:MM:SS +/-TTTT
 categories: [Agent, Pi]
-tags: [Agent, Claude Code, Context]     # TAG names should always be lowercase
+tags: [Agent, Pi, Context]     # TAG names should always be lowercase
 # toc: false
 ---
 
@@ -11,7 +11,11 @@ tags: [Agent, Claude Code, Context]     # TAG names should always be lowercase
 - 支持message粒度branch(同一个session内)
 - 支持从某个message fork一个新session, 或者创建一个空白session
 - 使用JSONL持久化
-
+- 核心代码位置
+    - /assets/code/pi/context
+        - /pi/packages/coding-agent/src/core/compaction/branch-summarization.ts
+        - /pi/packages/coding-agent/src/core/compaction/branch-summarization.ts
+        - /pi/packages/coding-agent/src/core/session-manager.ts
 ### Session Tree
 #### session head
 - JSONL的第一行header, header只提供元信息, 不是tree node
