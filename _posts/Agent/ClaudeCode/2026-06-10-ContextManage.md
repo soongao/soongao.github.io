@@ -91,7 +91,6 @@ if (feature('CONTEXT_COLLAPSE') && contextCollapse) {
 ##### Auto-Compact (全量摘要): 全量重写对话, 重新生成新消息链
 - 强制13K缓冲区: 有效窗口 - 13K缓冲区 = 触发阈值
 	- Anthropic跑了数据统计, P99.99的摘要长度不会超过留13K token长度
-  
 ```ts
 export const AUTOCOMPACT_BUFFER_TOKENS = 13_000
 
@@ -138,7 +137,6 @@ export function buildPostCompactMessages(result: CompactionResult): Message[] {
 - auto-compact之前会再做一次microcompact作为预处理
 - 恢复策略 (附件)
 	- 最多重新加载5个文件; 每个文件最多5k token; 总量不超过50k token
-
 ```ts
 export const POST_COMPACT_MAX_TOKENS_PER_FILE = 5_000
 export const POST_COMPACT_TOKEN_BUDGET = 50_000
@@ -152,7 +150,6 @@ export const POST_COMPACT_MAX_FILES_TO_RESTORE = 5
 - CLAUDE.md
 	- 不被压缩, 清空缓存, 下轮对话通过getUserContext()重新读取
 - 摘要任务prompt
-
 ```md
 CRITICAL: Respond with TEXT ONLY. Do NOT call any tools.
 - Do NOT use Read, Bash, Grep, Glob, Edit, Write, or ANY other tool.
@@ -162,7 +159,6 @@ CRITICAL: Respond with TEXT ONLY. Do NOT call any tools.
 
 - 摘要输出格式
 ![summary prompt](/assets/img/agent-files/claudecode/context/summary_prompt.webp)
-
 ```md
 <analysis>
 [模型的推理草稿，分析对话哪些重要]
