@@ -1,0 +1,31 @@
+# Loop
+
+- 使用单层 inner loop.
+- 单次用户输入跑到完成; loop 执行中如果有新用户输入, 只进入队列, 不插入当前 loop, 也不主动打断当前 tool/model.
+- 新消息队列第一版固定 FIFO.
+- 第一版不支持 `interrupt` / `replace` 策略.
+- 调用方如果想中断当前 run, 必须显式调用 `run.cancel()`.
+- 同一个 session 第一版只允许一个用户 active run.
+- 同一 session 的其他用户消息进入 FIFO 队列.
+- child/sub/fork agent run 属于内部并发, 不算同一 session 的用户 active run.
+- child/sub/fork 写入仍通过 SQLite writer、Task WAL writer 和工具权限规则协调.
+- 不同 session 允许并发运行.
+- SQLite 写入通过单连接写队列或事务控制避免锁冲突.
+- Task DAG 写入通过项目级 Task WAL 单 writer 队列避免追加交错.
+- 跨 session 并发不共享 active path / current run 状态.
+- `RunHandle.cancel()` 请求取消整个 run.
+- `await RunHandle.cancel()` 默认等待 run 进入终态或取消超时.
+- 取消超时后 `cancel()` 返回, 后台继续清理资源.
+- 取消超时时写 `cancel_timeout` event.
+- cancel 后立即阻止后续 model / tool / child/sub agent 调度.
+- 正在执行的 provider streaming / tool / child/sub agent 尽力 cooperative cancel.
+- cancel 不要求强杀所有子进程或连接, 但 adapter/tool runner 必须响应取消信号并清理资源.
+- 用户终止只支持终止整个 run, 不支持只取消某一个 tool 后继续同一 run.
+- End loop 条件:
+	- completed: 模型 response 没有 tool_use.
+	- max_turns: 达到最大轮数.
+	- aborted_streaming: 用户终止模型输出.
+	- aborted_tools: 用户终止工具执行.
+	- prompt_too_long: 消息过长, compact 后仍放不进上下文.
+	- max_output_tokens_recovery: 模型输出被截断, 多次续写仍失败.
+	- failed: provider/storage 等不可恢复错误.

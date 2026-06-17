@@ -1,0 +1,6 @@
+# Goal
+
+- 目标形态是可复用的 agent core SDK, 不是只服务单个 CLI.
+- 使用 Python 实现 agent core.
+- 第一层 API 面向 CLI / Server / Web 等调用方, core 通过统一 event stream 暴露运行过程.
+- MVP 第一阶段就是完整核心形态: Loop, Provider Adapter, Tool Registry, SQLite Context, Event Stream, Hooks, Permission, Memory, Compact, Sub/Fork Agent, Orchestrator Worker Pool, Plan Template Tool, Task DAG + WAL.

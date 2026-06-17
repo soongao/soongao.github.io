@@ -1,0 +1,51 @@
+# Compact
+
+- 大 tool result 放入 artifact 文件, message 中只保留摘要和 artifact 引用.
+- Compact 采用 Pi 风格:
+	- 不删除、不物理替换原始 nodes.
+	- 追加一个 compaction node.
+	- compaction node 记录 summary, first_kept_node_id, tokens_before, details.
+	- 构造模型上下文时, 如果 active path 上有 compaction node, 先放 compaction summary, 再放 first_kept_node_id 之后的尾部消息, 再放 compaction node 之后的新消息.
+	- 如果 active path 上有多个 compaction node, 使用最后一个有效 compaction node.
+	- 原始 nodes 仍保留在 SQLite, 可 inspect/replay.
+- 第一版不做 branch summary:
+	- `/switch_node` 只切换 active node.
+	- 不总结离开的分支.
+	- 不把 sibling branch 自动带入新上下文.
+- Compact cut point:
+	- 先从 active path 尾部往前累计 token, 保留 keep_recent_tokens.
+	- 找到初步 cut point 后尽量对齐到 user turn 起点.
+	- 避免切在 assistant/tool 中间.
+	- 如果单个 turn 太大, 允许 split turn, 但需要单独总结 turn prefix.
+- Compact summary 格式:
+	- 沿用 Pi 的结构化 checkpoint: Goal, Constraints & Preferences, Progress, Key Decisions, Next Steps, Critical Context.
+	- 增加 Files & Artifacts: 读过/改过的文件, artifact refs, 大 tool result 摘要.
+	- 增加 Tool & Runtime Notes: 关键 tool failures, denied tool, hook/permission 影响, 子 agent result 摘要.
+- Compact 执行策略:
+	- Compact 明确通过 fork compact agent 执行.
+	- fork compact agent 是 core 内部创建的 fork child agent, 不是模型主动调用 `agent.fork_agent`.
+	- fork compact agent 使用内置 `default_compact_agent` AgentDefinition.
+	- `default_compact_agent` 只能由 runtime 内部引用, 不出现在 `agent.list_agent_definitions` 中, 只在 inspect/debug 可见.
+	- `default_compact_agent` 不允许被用户级、项目级或代码注册 AgentDefinition 覆盖.
+	- compact fork 的模型使用 `compact.model_profile`, 缺省回退主模型; `default_compact_agent` 只提供 compact instructions, 不决定模型.
+	- 正常自动 compact: 达到阈值后记录 compact_pending task/event/session metadata, 后台 fork compact agent 压缩, 当前 loop 不阻塞.
+	- Recovery compact: 如果 prompt 已经放不进上下文, 同步 fork compact agent 执行 compact, 然后重新构造上下文.
+	- 如果 recovery compact 后仍放不进上下文, end reason 为 prompt_too_long.
+- Compact fork 与普通 fork_agent 的关系:
+	- 普通模型 run 是否能调用 `agent.fork_agent`, 仍由 mode / role / effective tool set 控制.
+	- compact fork 是 runtime 内部能力, 不需要把 `agent.fork_agent` 暴露给当前模型.
+	- Orchestrator / sub / worker / fork agent 不能主动调用 `agent.fork_agent`, 但 runtime 仍可以为上下文恢复触发 compact fork.
+	- compact fork 不能再创建子 agent, 不能使用 `agent.plan_template`, 不能创建或修改 Task DAG.
+	- compact fork 不允许调用 `recall_memory`; 它只总结触发时 active path 已经可见的内容.
+- Compact agent 权限:
+	- 只读 context.
+	- 输出 compaction payload: summary, first_kept_node_id, tokens_before, details.
+	- core 校验 payload 并写入 compaction node.
+	- compact agent 不直接修改 SQLite node tree.
+- Compact fork 落库:
+	- compact fork 正常写入 `agents` / `runs` / `events`, `agents.metadata_json.purpose=compact`.
+	- compact fork 的完整过程与同 session 一起持久化, 可通过 inspect/debug 查看.
+	- compact fork 完成后, core 校验 compaction payload.
+	- 如果触发 compact 时覆盖的 active path 仍是当前 active path 的前缀, core 将 compaction node 追加到当前 active node 后.
+	- 如果 active path 已切换或已被新的 compact 覆盖, 本次 compact 标记 stale, 不写 compaction node.
+	- stale compact 仍保留 fork run 过程和 compact_failed / compact_completed debug event, 但不影响后续上下文构造.

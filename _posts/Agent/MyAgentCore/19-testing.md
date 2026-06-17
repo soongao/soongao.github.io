@@ -1,0 +1,211 @@
+# Testing
+
+- 第一版使用 `pytest`.
+- 核心模块必须有单元测试.
+- 重点覆盖:
+	- provider fake stream helper.
+	- runtime.start 支持 mode="normal" / mode="orchestrator"; orchestrator mode 的主 agent 是 Orchestrator, 不创建两层 agent 结构.
+	- 同 session active run 存在时, 新 run 返回 queued RunHandle; queued run 事件先输出 run_queued, 前序 run 完成后 FIFO 启动并输出 loop_started.
+	- queued run 被 cancel 时直接 cancelled/dequeued, 不创建模型请求, 不触发 permission callback.
+	- run 成功完成后 active_node_id 指向最终 assistant node; 失败/取消后指向最后用户可见持久化 node, partial/failed assistant 默认不作为 active.
+	- tool registry / permission.
+	- tool handler 异步执行和进度事件; 当前 loop 等待所有 tool calls 最终完成后再继续.
+	- 同一轮多个 agent tools 并行执行, 并受 max children / worker pool 限制.
+	- 并行 agent tools wait_all failure policy: 单个失败不取消其他并行 agent tools.
+	- SQLite mapper / migration.
+	- plan template tool 返回 synthetic user block.
+	- 普通 write tool 写入模型选择的 `.soong-agent/plans/<name>.md`.
+	- Task DAG tool schema、权限和状态约束.
+	- task_update 使用结构化 patch operations, 校验各 op 必填字段; 支持 update_task / add_step / update_step / delete_step / add_dependency / remove_dependency / cancel_step / reopen_step; operations 按模型顺序应用到临时 DAG, 最终整体校验后原子提交.
+	- 同一 session 多 active Task DAG, 每个 Task 独立 WAL, Task tools 按 task_id 定位.
+	- worker run 只能 query/claim dispatch_worker.task_id 指定 Task 内的 step.
+	- worker run 最多 claim 一个 step; 重复 claim 返回 `step_already_claimed_by_run`.
+	- dispatch_worker.allowed_step_ids 是硬 scope; 可包含未 ready step; 全部未 ready 时 worker 成功返回 no_step_claimed=true.
+	- allowed_step_ids 省略表示不按 step id 限制, 空数组返回 validation_error, 重复 id 由 core 去重.
+	- task_id 由模型提供, core 校验同 session active Task 唯一性和安全字符.
+	- task_id 和 Task WAL 文件名不要求一致, task_create 绑定 task_id 与 wal_path.
+	- step_id 由模型提供, core 校验唯一性和安全字符, 不从 title 自动生成.
+	- v1 不提供 Step priority / order / reorder; Orchestrator 通过 DAG 依赖和 dispatch_worker.allowed_step_ids 控制执行范围.
+	- Task ready 自动推进、blocked / failed step Orchestrator-only 恢复、failed / cancelled step 不满足下游依赖、cancelled step 不可恢复、ready step 查询、原子 claim、claim 冲突 `step_already_claimed`、`no_step_claimed` 正常结果、lease 续租和过期恢复到 pending 后重新 ready 推进.
+	- claim 成功只进入 claimed, 不自动 running; worker 必须显式写 running 才产生 `task_step_started`.
+	- worker 可以从 claimed 直接进入 blocked / completed / failed / cancelled, running 不是前置条件.
+	- running 状态变更写独立 `task_step_started` WAL / event 类型, 不用普通 `task_step_updated` 表示.
+	- step terminal 状态变更写独立 `task_step_completed` / `task_step_failed` / `task_step_cancelled` WAL / event 类型, 不用普通 `task_step_updated` 表示.
+	- blocked 状态变更写独立 `task_step_blocked` WAL / event 类型, 不用普通 `task_step_updated` 表示.
+	- Orchestrator 恢复 blocked / failed step 到 pending 时写独立 `task_step_reopened`.
+	- worker run 正常结束、取消或超时但 claimed / running step 未进入 terminal 或 blocked 时, core 自动标记 step failed、写 WAL, 并区分 failed reason.
+	- worker 标记 step blocked 时清空 claim/lease, blocked step 不再被 worker 占用.
+	- `task_step_lease_expired` 必须写 WAL, replay 后应清空 claim 并恢复 pending, 再重新执行 ready 推进.
+	- completed step 不允许删除或修改执行结果历史; Orchestrator 可修改 title/summary 用于澄清展示.
+	- Orchestrator 可以修改 pending / ready / blocked / failed / claimed / running step 内容、依赖、worker_pool_id、required; sub/worker 不能修改这些内容字段.
+	- Orchestrator 修改 claimed/running step 不自动通知或停止 worker; 即使新依赖不满足, 当前状态仍保持 claimed/running; 修改只写 task_updated patch.
+	- Orchestrator 修改 claimed/running step 时, task_updated/debug metadata 标记 updated_after_dispatch, inspect 可对比 dispatch-time 摘要和最新 step 摘要.
+	- Task / Step 内容字段和 DAG 拓扑只能通过 task_update patch 修改; task_update_step 只更新执行状态和结果.
+	- 依赖修改后只对 pending/ready step 重新计算 ready/pending; blocked/failed 保持原状态直到显式 reopen, cancelled 保持 cancelled.
+	- Orchestrator 可以直接取消 pending / ready step; 单个 claimed / running step 不直接取消, 但 Task 级 cancel/fail 会强制终止 claimed / running step.
+	- Orchestrator 只允许删除 pending / ready / cancelled step; blocked / failed / completed / claimed / running step 不可删除.
+	- cancelled step 不可 reopen; 如需继续执行相关工作, Orchestrator 需要新增 replacement step.
+	- 删除仍被下游依赖的 step 返回 `step_has_dependents`, 不自动移除依赖或级联删除.
+	- Task pending 初始状态和首次 ready / claimed / running step 触发 task_running WAL.
+	- Task blocked 只能由 Orchestrator 设置; core 只提供 stalled diagnostic.
+	- blocked Task 可由 Orchestrator 恢复到 pending, 写独立 `task_reopened`, 再重新执行 ready/running 推进.
+	- Task blocked 不自动修改 step、不取消 running worker; blocked Task 禁止 dispatch_worker, 返回 `task_not_dispatchable`; 已有 worker 可继续写回 step, 但不会自动解除 Task blocked.
+	- task_reopened 只恢复调度资格, 不自动 dispatch worker.
+	- Task failed 只能由 Orchestrator 显式设置; core 不因 worker / step failed 自动设置 Task failed.
+	- `agent.task_fail` / `agent.task_cancel` 强制终止所有未结束 step, 包括 claimed / running; claimed / running 对应 worker run 会被取消.
+	- Task 级终止等待 worker run cancellation 最多 `agents.child_cancel_timeout_ms`; 超时写 child_agent_cancel_timeout, 但不阻塞 Task terminal WAL.
+	- Task 级终止时, task_fail 将未结束 step 写 failed / reason=task_failed, task_cancel 将未结束 step 写 cancelled / reason=task_cancelled.
+	- Task failed / cancelled 是不可恢复 terminal 状态.
+	- Task completed / failed / cancelled 后 step 更新返回 `task_terminal`, 不写 Task WAL; 迟到 worker 只持久化自身 transcript/result.
+	- Task terminal 后 dispatch_worker 返回 `task_not_dispatchable`.
+	- runtime 恢复默认跳过 terminal Task, active task_list 不包含 terminal; task_list(include_terminal=true) 和 task_get 可读取 terminal 只读视图.
+	- v1 不自动清理 terminal Task WAL.
+	- task_get 读取 terminal Task 不写 active DAG cache; task_list(include_terminal=true) 不无边界全量 replay terminal WAL.
+	- v1 不维护 Task WAL manifest/index; terminal task list 默认最多 50 个, 支持 limit/offset, 按更新时间倒序.
+	- task_list 支持 status 过滤; task_query_steps 支持多 statuses 过滤, 默认不返回 terminal steps, 除非 include_terminal_steps=true.
+	- task_query_steps 支持 limit/offset 默认 limit=50, 默认按 created_at 升序; core 不按状态做复杂优先级排序.
+	- worker 查询 ready step 默认 limit=5, 返回多个候选供模型判断.
+	- v1 不提供 task_archive / task_delete 工具.
+	- Step required 默认 true; required=false 本身不阻塞 `task_complete`, 但不改变依赖必须 completed 的规则.
+	- Task complete 要求全部 required step completed 且没有 claimed/running step; pending/ready optional step 在 complete 时自动 cancelled.
+	- Task completeable diagnostic 不自动完成; `task_complete` 校验 required=true steps 全部 completed 且没有 claimed/running step.
+	- claim skipped / no_step_claimed 只写 runtime event, 不写 Task WAL.
+	- Task WAL JSONL append / replay / failure handling.
+	- 配置加载:
+		- `SOONG_AGENT_HOME` 未设置时使用 `~/.soong-agent`.
+		- `SOONG_AGENT_HOME` 设置时只读写该目录下的用户级文件.
+		- `${SOONG_AGENT_HOME}/config.toml` 不存在、解析失败或 schema 校验失败时 runtime / CLI 启动失败.
+		- 不读取 `<project>/.soong-agent/config.toml`.
+		- 不读取项目级 hooks / tools / agents / skills / memory / rules.
+		- `<project>` 由 CLI `--path` 或 SDK `project_dir` 决定; 缺省为 cwd.
+		- `--path` / `project_dir` 指向文件时使用父目录作为 `<project>`, 不自动读取文件正文.
+		- `--path` / `project_dir` 不存在时启动失败.
+		- 启动时 resolve symlink, 后续路径边界判断使用 resolved path.
+	- AgentDefinitionRegistry 的内置 definition、用户级文件 definition、代码注册 definition、显式 overrides、隐式覆盖拒绝和重复 id 校验.
+	- SDK 内置 default_sub_agent / default_fork_agent / default_worker_agent 可被 list_agent_definitions 查询和 worker_pools 引用.
+	- default_worker_agent 默认暴露 Task 查询/claim/update 自己 step 和常规只读文件工具, 不默认暴露写文件工具.
+	- AgentDefinition overrides 是整份替换, 空 body 不继承被覆盖 definition body.
+	- AgentDefinition id 由 definition metadata / SDK code 注册显式提供, core 不自动生成 id 或 namespace.
+	- 用户级 AgentDefinition 文件只来自 `${SOONG_AGENT_HOME}/agents/*.md`; 不存在项目级 AgentDefinition 目录.
+	- 文件 definition 不能覆盖 code 注册 definition; user 可显式覆盖 builtin; code 注册 definition 可以显式覆盖任何来源.
+	- `agent.list_agent_definitions` 的 source 只允许 builtin / user / code.
+	- `agent.list_agent_definitions` 返回 AgentDefinition catalog, 不返回 worker runtime 状态.
+	- create_sub_agent 禁止 inline system instructions, 未指定 agent_definition_id 时使用 default_sub_agent.
+	- fork_agent 禁止 inline system instructions, 未指定 agent_definition_id 时使用 default_fork_agent.
+	- dispatch_worker 禁止覆盖 worker AgentDefinition system instructions, instruction/context 只作为 user/context block.
+	- AgentDefinition body 作为子 agent dynamic system instructions, 父 agent task/instruction/context 作为 user/context block.
+	- AgentDefinition body 允许为空, 空 body 使用 SDK 内置 default sub-agent instructions.
+	- AgentDefinition.description 只用于 catalog/list, 不进入子 agent prompt.
+	- AgentDefinition.suggested_tools 只作为工具偏好, 不能扩大 effective tool set 或绕过权限.
+	- AgentDefinition.suggested_tools 引用不存在工具时 definition 加载失败.
+	- AgentDefinition.suggested_tools 引用存在但当前禁用工具时仍可加载, list 时可标记 unavailable.
+	- list_agent_definitions / list_workers 返回 suggested_tools availability 和 unavailable_reason.
+	- suggested tool unavailable_reason 默认是枚举, 详细原因只在 debug/inspect 输出.
+	- AgentDefinition.tags 是自由字符串列表, 只做类型/长度校验.
+	- create_sub_agent / fork_agent / dispatch_worker 的 allowed_tools 只作为本次 run 请求子集, 不能扩大权限.
+	- agent tool allowed_tools 包含不存在 canonical tool name 时返回 validation_error 且不启动子 agent run.
+	- agent tool allowed_tools 包含会被 effective tool set 排除的工具时返回 validation_error 且不启动子 agent run.
+	- 未传 allowed_tools 时, 子 agent 使用自身 agent type / mode / default policy 的默认工具集合, 不继承父 effective tool set.
+	- AgentDefinition.model_profile 是偏好, 可被 runtime/config/SDK 策略覆盖; 模型不能通过 agent tool 参数覆盖.
+	- model_profile 支持字符串引用命名 profile 和 inline partial config; 解析顺序为主 model -> 用途/角色 profile -> SDK/runtime policy.
+	- 项目目录不能声明 model profile, 不能改变 provider/base_url/api_key_env/default model.
+	- orchestrator worker pool 复用.
+	- orchestrator 模式没有有效 worker_pools 时启动失败, 不创建隐式默认 worker pool.
+	- worker pool 可以显式引用内置 default_worker_agent, 但 runtime 不自动创建未配置 worker.
+	- worker_pools 使用显式 worker 列表, 不支持 count; 可通过多个条目重复引用同一 agent_definition_id 创建多个同类型 worker; 显式 worker_id 在 pool 内唯一.
+	- 未配置 worker_id 时, core 生成跨重启稳定的运行时 id; 配置顺序变化会导致自动 id 变化.
+	- worker 条目 allowed_tools 是工具上限, dispatch_worker.allowed_tools 只能继续收窄.
+	- 同一 worker agent_id 可跨 Task 复用, 每次 dispatch 在 worker context tree 开新 branch, run scope 由 dispatch_worker.task_id 限定.
+	- worker pool 引用 AgentDefinition, `agent.list_workers` 返回 agent_definition_id、静态描述和当前 status, 不返回 recent_results.
+	- Orchestrator 通过 `agent.dispatch_worker` 启动 worker run; ready step 不触发后台自动 poll.
+	- dispatch_worker 未指定 worker_agent_id 时, core 按配置顺序选择第一个 idle 且校验通过的 worker, 不做相关性打分.
+	- dispatch_worker result 必须包含 claimed_step_id / step_status / step_result_summary / no_step_claimed 摘要.
+	- no_step_claimed 是成功 tool result, 不设置 is_error.
+	- worker final result 与 Task step 摘要不一致时, 调度状态以 Task DAG / WAL 的 step 状态为准.
+	- dispatch_worker 的 worker_busy / worker_not_available / worker_pool_busy、allowed_step_ids 权限/校验和最终 result 等待.
+	- fork_agent 继承 active path 可见节点, 并按 fork child 权限和预算重新构造 prompt.
+	- sub agent 独立 stream.
+	- 子 agent 写工具权限确认走统一 permission callback, request 包含 agent_id/run_id/parent 信息.
+	- event replay / inspect.
+	- context build / compaction 边界.
+	- compact 通过 runtime 内部 fork compact agent 执行, 不是模型主动调用 `agent.fork_agent`.
+	- compact fork 使用内置不可覆盖 default_compact_agent; default_compact_agent 不出现在 agent.list_agent_definitions, 只在 inspect/debug 可见.
+	- compact fork 使用 compact.model_profile, 缺省回退主模型; compact AgentDefinition 不决定模型.
+	- 自动 compact 达到阈值后创建后台 fork compact agent, 当前 loop 不阻塞.
+	- recovery compact 同步等待 fork compact agent 输出 compaction payload, 再重建上下文.
+	- 当前 agent 即使不能主动使用 `agent.fork_agent`, runtime 仍可触发 compact fork.
+		- fork compact agent 只读 context, 不能创建子 agent, 不能使用 `agent.plan_template`, 不能创建或修改 Task DAG, 不能调用 recall_memory.
+	- fork compact agent 正常写 agents/runs/events 且 purpose=compact; core 校验 payload 后写 compaction node.
+	- compact 完成时如果触发 active path 不再是当前 active path 前缀, 标记 stale, 不写 compaction node.
+	- Memory Extraction Job 不是 fork/sub/child agent, 不创建 agent_id / run_id, 不进入 agents 表, 不占用 child concurrency.
+	- Memory Extraction Job 使用 `memory.extract_model_profile`; 未配置时完全回退主模型配置.
+	- Memory Recall Selector 使用 `memory.recall_model_profile`; 未配置时完全回退主模型配置.
+	- Memory Writer 只能写 `${SOONG_AGENT_HOME}/memory/MEMORY.md` 和 `${SOONG_AGENT_HOME}/memory/{user,feedback,reference}/*.md`, 不能写项目 `.soong-agent/memory` 或任意项目业务路径.
+	- 第一版不支持项目记忆; 项目级配置不能声明 memory source of truth 目录.
+	- sub/fork/worker agent 不能直接写长期 memory; Memory Writer 不进入普通 agent effective tool set.
+	- `internal.recall_memory` 只允许 main agent / Orchestrator 使用; sub/fork/worker 和 compact fork 不暴露.
+	- `internal.recall_memory` 是 readonly internal tool, 只能写 `memory_context` node, 不修改 memory 文件.
+	- Memory Extraction Job 创建/更新 memory 时必须写 `source_node_ids`, 并拒绝缺失来源的 memory.
+	- Memory Extraction Job 不写 secret、credential、Task DAG 当前状态、Plan 正文、完整 transcript、临时 tool 输出.
+	- Memory 落库成功后才推进 scan cursor; 写文件或 schema 校验失败时不推进 cursor.
+	- duplicate / ignore 且无文件变更的扫描可以推进 cursor.
+	- memory_extraction_* event payload 必须 redacted, completed event 包含 created / updated / ignored / duplicate / conflict / source_node_ids / files_changed / scan_cursor 摘要.
+	- instruction_catalog:
+		- runtime / run 开始时扫描 `${SOONG_AGENT_HOME}/CLAUDE.md`, `${SOONG_AGENT_HOME}/AGENTS.md`, `${SOONG_AGENT_HOME}/rules/**/*.md`, `<project>/**/CLAUDE.md`, `<project>/**/AGENTS.md`.
+		- 不扫描 `<project>/.soong-agent/rules`.
+		- catalog 只包含 path 和 frontmatter 元信息, 不包含正文.
+		- 无 frontmatter 的 instruction 文件不跳过, 使用相对路径作为基础元信息.
+		- 同目录 `CLAUDE.md` 优先于 `AGENTS.md`, catalog 只展示胜出的文件.
+		- 扫描跳过 `.git`, `node_modules`, `.venv`, `venv`, `dist`, `build`, `target`, `.next`, `.cache`, `__pycache__`.
+		- catalog 最多 200 个文件, 超过时截断并标记 truncated.
+		- 模型通过普通 `code.read_file` 决定读取哪些 instruction 正文.
+		- `code.read_file` 读取 instruction 文件时注册 dynamic system block / instruction_context; 普通业务 md 不注册.
+		- 重复读取同 hash instruction 文件返回 already_loaded, 不重复注入.
+	- hooks 只来自用户级 `${SOONG_AGENT_HOME}/hooks.json`; runtime 不读取 `<project>/.soong-agent/hooks.json`.
+	- Hook matcher 只支持 event type / canonical tool name / tag 精确匹配和 path prefix 匹配.
+	- MCP lazy connect 失败时, 失败 server 的 tools 不进入 effective tool set, provider schema 和可用工具视图都隐藏.
+	- code tools:
+		- `code.read_file` 按行读取, 默认 200 行, 单次最多 1000 行, 每行最多 4096 bytes; 超过返回 truncated / next_start_line / truncated_lines.
+		- `code.read_file` 读取大文件不 artifact 化全文; 二进制文件不返回内容; file_not_found 是 tool error, 不使 run failed.
+		- `code.list_dir` 默认非递归, 支持 recursive / limit.
+		- `code.search` 基于 rg, 默认搜索 `<project>`, 支持 query / path / glob / limit.
+		- `code.write_file` 默认 create_dirs=true, overwrite=false; 已存在文件返回 path_conflict.
+		- `code.edit_file` 支持 old/new 精确替换和 unified_diff patch 两种形式; 两者必须二选一.
+		- old/new 要求 old text 唯一, 找不到 text_not_found, 多处匹配 ambiguous_edit; replace_all=true 时替换全部.
+		- unified_diff 必须只修改当前 path, 只支持单文件 diff, 不支持 rename/delete/binary patch; context 不匹配返回 patch_apply_failed.
+		- `code.edit_file` 不提供 dry_run.
+		- `code.run_command` 使用 argv list, 默认 cwd=`<project>`, 可选 cwd 必须位于 `<project>` 或 allowed roots; 模型不能传 env; 默认 timeout 120000ms, 最大 600000ms.
+		- command/declarative tools 第一版不提供 OS 级 sandbox / container sandbox; 测试覆盖 argv/cwd/env/timeout/permission/output 边界.
+		- stdout/stderr 过大时截断 + artifact.
+	- 权限:
+		- decision 只允许 allow_once / allow_for_session / deny.
+		- 没有 always_allow / deny_for_session.
+		- allow_for_session 只保存在当前 session 内存, 不写磁盘.
+		- allow_for_session scope 为 canonical tool name + normalized target scope; `code.run_command` 至少包含 executable + cwd.
+		- write / edit / run_command / declarative write / dangerous / network 工具默认询问.
+		- 普通 readonly 自动允许; 敏感 read/list/search 询问.
+		- 敏感路径包括 `~/.ssh`, `~/.gnupg`, `~/.aws`, `~/.config/gcloud`, `*.pem`, `*.key`, `.env`, `.env.*`.
+		- 没有 permission callback 时, 需要询问的工具默认 deny.
+		- CLI permission callback 使用最小 stdin 交互, 只接受 allow_once / allow_for_session / deny; stdin 不可用或输入无效时 deny.
+		- hook deny 和 permission deny 都写 `tool_result is_error=true`; readonly deny 可继续后续安全 readonly, write/dangerous deny 停止后续 tool calls.
+	- delete_session 遇到 running/queued run 返回 session_active; cleanup_project_tasks 和 cleanup_artifacts 默认 dry_run=true.
+	- cleanup_project_tasks 默认只清 completed terminal Task WAL, failed/cancelled 需要显式 include.
+	- cleanup_artifacts 默认只清 debug/raw artifacts, 普通 artifacts 需要 include_all.
+	- Provider/model 不支持本轮 tools/schema 时 run failed, 不静默降级纯文本.
+- 单元测试内部可以使用最小 fake stream helper 提供确定性 `ModelEvent`, 但不作为 SDK adapter 暴露.
+- Ollama adapter 必须有真实本地模型测试:
+	- 测试时连接本机 Ollama; 如果未运行, 测试 fixture 自动启动 `ollama serve` 并等待健康检查.
+	- 自动启动 Ollama 仅限测试 fixture; 正常 CLI/runtime 不负责启动 Ollama 服务.
+	- 固定使用模型 `gemma4`.
+	- 用户环境已经 pull `gemma4`, 测试代码不负责 pull 模型.
+	- `gemma4` 被视为支持 tool call; tool-call 真实测试不降级、不 skip.
+	- 如果测试 fixture 启动了 Ollama 进程, 测试结束时只停止该进程; 不删除 test-runs 文件.
+	- Ollama 测试覆盖 streaming、tool call 协议映射、基础 loop 行为.
+	- provider 集成测试使用 Ollama, 不单独设计公开 Mock/Test provider adapter.
+- 测试数据使用真实但隔离的测试目录:
+	- `SOONG_AGENT_HOME=~/.soong-agent/test-runs/<run_id>/home`.
+	- `<project>=~/.soong-agent/test-runs/<run_id>/project`.
+	- 测试需要生成该 home 下的 `config.toml`.
+	- 测试可以真实写 `${SOONG_AGENT_HOME}` 和 `<project>/.soong-agent/tasks/<session_id>/*.wal.jsonl`.
+	- 测试结束默认不删除 test-runs, 方便人工查看和调试.
+	- 测试不能触碰 test-runs 之外的真实 `~/.soong-agent` 或其他用户文件.

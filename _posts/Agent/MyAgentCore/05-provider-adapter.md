@@ -1,0 +1,145 @@
+# Provider Adapter
+
+- 采用强抽象: core 内只使用统一协议, OpenAI / Anthropic 等差异全部压到 adapter 层.
+- 统一协议覆盖:
+	- message
+	- content block
+	- tool call
+	- tool result
+	- stop reason
+	- usage
+	- error
+	- streaming event
+- ProviderAdapter 主入口:
+	- 第一版只支持 streaming 主路径: `stream(request: ModelRequest) -> AsyncIterator[ModelEvent]`.
+	- ProviderAdapter 显式提供生命周期方法: `async close()`.
+	- runtime shutdown 时统一调用 adapter `close()`, 关闭 HTTP client, SDK client, 连接池等资源.
+	- adapter `close()` 必须幂等.
+	- core loop 永远消费 `stream(...)`, 不维护独立 `complete(...)` 路径.
+		- 测试内部 fake stream helper 也使用 streaming 形态, 直接 yield 标准 `ModelEvent`, 但不作为公开 provider adapter.
+	- adapter 负责把 provider 原始 streaming 协议转换成 core 标准事件.
+	- core 负责消费事件、写 SQLite、聚合最终 node、调度 tool call.
+- `ModelRequest` 只暴露 provider-neutral 字段:
+	- model
+	- messages
+	- system blocks
+	- tools
+	- tool choice
+	- temperature / max output tokens 等通用采样参数
+	- metadata
+- `ModelRequest.messages` 使用严格 Pydantic 模型:
+	- message/content block 使用 discriminated union.
+	- content block 按 `type` 分派, 例如 text / json / tool_call / tool_result / artifact_ref.
+	- core 在进入 adapter 前完成结构校验.
+	- adapter 不接收任意 raw dict 作为主协议.
+- `ModelMessage.role` 只保留 provider 通用角色:
+	- system
+	- user
+	- assistant
+	- tool
+	- skill_context / memory_context / compaction / child_result 等 core 语义只保留在 node_type/metadata.
+	- prompt composer 负责把 core node 映射成 provider-neutral ModelMessage.
+- `ModelRequest.system` 是 system prompt 的 canonical 表达:
+	- core 输出 `system: list[SystemBlock]` 和 `messages: list[ModelMessage]`.
+	- `messages` 默认不包含 system message.
+	- adapter 根据 provider 协议把 system blocks 映射成 system param 或 system message.
+- `SystemBlock` 保留来源和预算信息:
+	- source, 例如 core / project / skill_catalog / memory_catalog / tool_protocol.
+	- priority.
+	- dynamic: bool.
+	- token_count.
+	- metadata.
+	- static system 永远保留.
+	- dynamic system 可做 relevance selection 和预算裁剪.
+- provider 特有能力通过 `provider_options` 传入:
+	- `provider_options` 是按 provider namespace 分组的 dict.
+	- core 不理解 provider_options 语义, 只透传给对应 adapter.
+	- adapter 必须校验自己支持的 provider_options, 未知字段默认报配置错误.
+- provider 原始 request / response 保存策略:
+	- 默认只保存最小 metadata: provider, model, provider request/response id, stop reason, usage, latency, retry info.
+	- debug 模式可以把 raw request / raw response 保存为 artifact.
+	- raw artifact 只用于 inspect/debug/replay, 永远不自动进入模型上下文.
+	- nodes 中仍只保存 provider-neutral content blocks.
+- Usage 归一字段:
+	- input_tokens
+	- output_tokens
+	- total_tokens
+	- cache_read_tokens
+	- cache_write_tokens
+	- reasoning_tokens
+	- raw_usage
+- Stop reason 归一模型:
+	- reason 使用归一枚举: end_turn / tool_use / max_tokens / stop_sequence / content_filter / error.
+	- raw_stop_reason 保留 provider 原始 stop reason.
+- ProviderErrorPayload 归一模型:
+	- type
+	- code
+	- message
+	- retryable
+	- raw
+- provider 不支持当前请求能力时:
+	- 使用 `ProviderErrorPayload`.
+	- `type="unsupported_capability"`.
+	- `retryable=false`.
+	- payload 写明 provider, model, capability, request_feature.
+	- 对应 run 进入 failed, 不继续重试.
+- adapter 不允许静默降级工具能力:
+	- 如果本次 run 的 effective tool set 非空, 但 provider/model 不支持 tools, run failed.
+	- 如果 effective tool set 为空, provider 可以正常纯文本运行.
+	- adapter 不能自行移除 tools 后继续请求.
+- adapter 负责把 SDK/http exception 转成 `ProviderErrorPayload` 或抛出 `ProviderError` exception.
+- Streaming 由 provider adapter 内部处理 provider 差异, core 只接收标准事件:
+	- model_started
+	- model_text_delta
+	- tool_call_delta
+	- model_completed
+	- model_failed
+- ModelEvent 分两层:
+	- core loop 只依赖上述稳定事件.
+	- provider/debug event 可以存在, 但默认只进入 debug event stream 或 artifact.
+	- provider/debug event 不参与 loop 主逻辑, 不驱动 tool 执行.
+- Tool call streaming:
+	- `tool_call_delta` 只用于 UI 展示和 debug.
+	- adapter 内部负责聚合 provider tool argument delta.
+	- core 真正执行 tool 前只读取 `model_completed.tool_calls`.
+	- `model_completed.tool_calls` 必须是完整结构化 `ToolCall` 列表, arguments 已经是 dict.
+- `ToolCall` 使用精简稳定模型:
+	- tool_call_id.
+	- name: canonical tool name.
+	- arguments: dict.
+	- metadata.
+	- provider 原始 id/name/arguments string/index/content_block_id 等只保留在 metadata/raw, 不进入执行主路径.
+- `model_completed` 必须携带完整 assistant message:
+	- assistant content blocks
+	- tool_calls
+	- usage
+	- stop_reason
+	- metadata
+	- core 收到 `model_completed` 后一次性写 assistant node.
+	- core 不依赖 replay delta 来构造最终 assistant node.
+- Provider streaming 中途失败:
+	- adapter 发出 `model_failed` 事件时携带归一化 `ProviderErrorPayload`, 或抛出 `ProviderError` exception.
+	- 如果已经产生 partial text, core 写 partial assistant node.
+	- partial assistant node metadata 标记 partial=true, failed=true, error=ProviderErrorPayload.
+	- prompt composer 默认跳过该 partial assistant node, 不进入后续模型上下文.
+	- inspect/replay 仍可看到 partial 输出和失败原因.
+- Token 统计分两类:
+	- provider 返回的 `usage` 是权威账单/观测数据.
+	- core 可以通过 `TokenCounter` 做 prompt 预算估算和 compact 判断.
+	- provider usage 和 core token estimate 分开保存, 不互相覆盖.
+- Provider 错误按类型重试:
+	- timeout / 429 / 5xx / 网络瞬断可重试.
+	- 4xx 参数错误和鉴权错误不重试.
+	- 最多重试 N 次, 使用指数退避.
+	- retry 逻辑在 adapter 内部完成, core 只看到最终成功事件流或最终 `ProviderErrorPayload` / `ProviderError`.
+	- retry 次数、退避、retry-after、最后错误写入 metadata/event.
+- Provider tool schema 兼容性:
+	- registry 负责工具注册/启动时校验 core JSON Schema 子集.
+	- provider/model 兼容性在 run 启动前、组装 `ModelRequest` 时校验.
+	- 如果当前 provider/model 不支持某个 tool schema, run 直接 failed, 不发送模型请求.
+	- adapter 不允许静默降级 schema.
+- Streaming 取消契约:
+	- `stream(...)` 是 async generator, 必须正确处理 `asyncio.CancelledError`.
+	- core cancel 时取消消费 task.
+	- adapter 必须关闭底层 HTTP/SSE stream/client response, 不再 yield 后续事件.
+	- partial node、`aborted_streaming` event 和 run end_reason 由 core 负责写.

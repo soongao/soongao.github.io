@@ -1,0 +1,206 @@
+# Python Implementation
+
+- Python 版本基线: Python 3.11+.
+- 包管理使用 `uv` + `pyproject.toml`.
+- Python distribution name 使用 `soong-agent`.
+- import package name 继续使用 `agent_core`.
+- CLI entry point 使用 `soong-agent`.
+- Core 直接使用实用依赖:
+	- `pydantic`
+	- `httpx`
+	- `aiosqlite`
+	- `PyYAML`
+	- 常用 provider 官方 SDK.
+- `PyYAML` 用于解析/写入 Memory, Skill 等 md frontmatter.
+- 第一版默认安装常用官方 SDK, 优先保证开箱即用.
+- Core 采用 async-first 设计:
+	- model streaming, tool execution, hook execution, child agent 都通过 asyncio 调度.
+	- 对外 event stream 使用 async iterator / async generator.
+- 类型和 schema:
+	- 用 Pydantic 定义 core protocol, tool input/output, hook input/output, provider normalized event.
+	- JSON Schema 从 Pydantic model 导出, 供 provider tool schema 和声明式 tool 校验使用.
+	- 核心类型分三层:
+		- protocol: 面向 provider / tool / hook 的稳定协议类型.
+		- runtime: 面向 SDK 调用方、loop、event stream 的运行态类型.
+		- storage: 面向 SQLite 落库和迁移的 row / record 类型.
+	- protocol 类型不直接包含 SQLite 字段.
+	- storage 类型不直接暴露给 provider adapter.
+	- runtime 类型负责连接 protocol 和 storage, 但不替代二者.
+	- protocol 第一批类型:
+		- ModelRequest
+		- ModelMessage
+		- ContentBlock
+		- SystemBlock
+		- ModelEvent
+		- ToolCall
+		- ToolResult
+		- ToolDefinition
+		- HookInput
+		- HookOutput
+		- PermissionRequest
+		- PermissionDecision
+	- Plan / Task 不放入 protocol 层, 放入 runtime/domain 层.
+	- runtime 第一批类型:
+		- AgentConfig
+		- RunHandle
+		- RunState
+		- RuntimeEvent
+		- SessionState
+		- AgentState
+		- Node
+		- ArtifactRef
+		- Plan
+		- Task
+		- TaskDAG
+		- TaskStep
+		- TaskWalEvent
+		- ChildAgentResult
+		- ContextBuildReport
+	- runtime 类型是 core loop 和 SDK 调用方主要接触的对象.
+	- storage 第一批类型:
+		- SessionRecord
+		- AgentRecord
+		- RunRecord
+		- NodeRecord
+		- EventRecord
+		- ArtifactRecord
+	- storage 类型字段贴近 SQLite 表结构.
+	- storage 类型中的 JSON 字段保留 `*_json` 命名.
+	- storage 到 runtime 的转换由 mapper 负责.
+	- runtime 类型不直接依赖 SQLite row shape.
+	- 类型文件按三层组织:
+		- `src/agent_core/types/protocol.py`
+		- `src/agent_core/types/runtime.py`
+		- `src/agent_core/types/storage.py`
+		- `src/agent_core/types/mappers.py`
+		- `src/agent_core/types/enums.py`
+	- `protocol.py` 只放 provider / tool / hook 稳定协议类型.
+	- `runtime.py` 放 SDK 调用方、loop、domain 使用的运行态类型.
+	- `storage.py` 放 SQLite row / record 类型.
+	- `mappers.py` 负责 storage <-> runtime 转换.
+	- `enums.py` 放跨层共享的 StrEnum, 避免各层重复定义状态字符串.
+	- Pydantic 模型默认禁止未知字段:
+		- 默认使用 `extra="forbid"`.
+		- 只有明确设计为扩展点的字段允许承载额外信息, 例如 `metadata`, `provider_options`, `raw`.
+		- provider / tool / hook 协议边界不接受任意未声明字段.
+		- 未知字段应尽早报 schema/config 错误, 避免被静默忽略.
+	- ID 类型第一版使用字符串:
+		- runtime/storage/protocol 中的 id 字段都用 `str`.
+		- 通过固定前缀区分语义, 例如 `run_`, `task_`, `plan_`, `node_`, `agent_`, `artifact_`.
+		- Pydantic validator / helper 函数负责校验前缀和基本格式.
+		- 不为每类 ID 定义独立 runtime class.
+		- 这样保持 JSON, SQLite, Markdown frontmatter 和 Task WAL event payload 之间的表示一致.
+	- 状态、事件类型、权限类型使用 `StrEnum`:
+		- SQLite、JSON 和 Task WAL 中保存枚举值字符串.
+		- Python 代码中使用枚举成员, 避免散落硬编码字符串.
+		- 适用范围包括 run status, task status, task step status, event type, permission kind, hook phase, tool kind.
+			- 跨层共享枚举放在 `src/agent_core/types/enums.py`.
+	- storage/runtime mapper 保持轻量:
+		- 只负责字段命名转换、JSON parse/dump、枚举转换、默认值补齐.
+		- 不负责业务规则判断.
+		- task DAG 状态流转、权限校验、claim 校验留给 service/manager 层.
+		- mapper 抛出的错误仅表示数据格式无法转换, 不表示业务操作不允许.
+	- 错误类型体系:
+		- 定义 `AgentCoreError` 作为 SDK 内部可预期错误基类.
+		- 第一批分类 exception 包括 `ConfigError`, `ProviderError`, `ToolError`, `StorageError`, `SchemaError`, `PermissionDeniedError`.
+		- 协议 / event 中的错误结构命名为 `ErrorPayload` / `ProviderErrorPayload`, 不与 Python exception 同名.
+		- 避免直接使用 Python 内置 `PermissionError` 表达 agent permission 拒绝.
+		- `AgentCoreError` 携带 code, message, retryable, details, cause.
+		- `ErrorPayload` 默认字段包括 type, code, message, retryable, details, redacted.
+		- `ErrorPayload` 默认不包含 traceback.
+		- debug 模式下 traceback 保存为 redacted artifact, event payload 只引用 artifact_id.
+		- run 边界负责把 exception 转成结构化 error payload 和对应 event.
+		- 对外 event / inspect 中默认只暴露 redacted error payload, 不直接暴露完整 traceback.
+		- debug 模式可以把 traceback 保存为 redacted artifact.
+- SQLite:
+	- 第一版直接使用 `aiosqlite`.
+	- runtime 持有一个 storage manager.
+	- 写操作通过单 writer 队列串行化.
+	- 读操作第一版可以复用 storage manager 连接, 或使用受控独立只读连接.
+	- 不允许每个 run 随意创建连接直接写同一个 DB.
+	- storage manager 负责事务边界、锁等待、关闭连接.
+	- SQLite 默认启用 WAL:
+		- 初始化时设置 `PRAGMA journal_mode=WAL`.
+		- 设置合理 `busy_timeout`.
+		- WAL / busy_timeout 由 storage manager 管理, 第一版不暴露为常规配置.
+	- 内置轻量 migration 系统:
+		- 使用 `schema_migrations(version, applied_at)` 表记录已应用版本.
+		- core 启动 / 打开 session DB 时自动按顺序执行缺失 migration.
+		- migration 由 SDK 代码内置, 不依赖 Alembic 等外部迁移工具.
+		- migration 必须幂等或在事务中保证失败回滚.
+		- schema 变更必须同步更新 storage record 类型和 mapper 测试.
+- Task WAL:
+	- Task DAG 不存 SQLite 当前状态表.
+	- Task DAG 当前状态保存在运行时内存.
+	- Task DAG 变更追加写入项目级 JSONL WAL.
+	- runtime 启动 / 恢复 session 时 replay Task WAL 重建内存 DAG.
+	- Task WAL manager 使用单 writer 队列, 避免并发追加交错.
+	- Task WAL record 使用 Pydantic model 校验.
+	- Task WAL 文件路径默认 `<project>/.soong-agent/tasks/<session_id>/<model-chosen-task-name>.wal.jsonl`.
+- HTTP/provider:
+	- provider adapter 内部可以用 `httpx` async client.
+	- 第一版内置多个常用 provider adapter:
+		- OpenAI adapter.
+		- Anthropic adapter.
+		- OllamaProviderAdapter.
+	- 内置 adapter 默认都不强制启用, 由配置选择 provider.
+	- provider adapter 通过 registry 创建:
+		- 内置 key 包括 `openai`, `anthropic`, `ollama`.
+		- registry value 是 adapter class 或 factory.
+		- 调用方可以注册自定义 adapter class / factory.
+		- 配置中的 `model.provider` 用 registry key 选择 adapter.
+		- 未知 provider key 触发 `ConfigError`.
+		- registry 归属于 `AgentCore` / `AgentRuntime` 实例, 不使用全局单例.
+		- 初始化时可传入 `provider_registry` 或 `providers`.
+		- builder API 提供 `register_provider(key, factory)`.
+		- 多个 runtime 实例可以拥有不同 provider registry, 方便测试和隔离.
+	- 常用官方 SDK 默认作为 core 依赖安装, 不要求用户额外安装 extras 才能使用内置 provider.
+	- 内置 provider adapter 可以直接依赖对应官方 SDK.
+	- 官方 SDK 依赖只允许出现在 provider adapter 层.
+	- 官方 SDK 类型不能泄漏到 core protocol, runtime API, storage schema, event payload.
+	- adapter 边界负责把官方 SDK request/response/error 转成 core 标准类型.
+	- OpenAI / Ollama 这类 HTTP 接口简单的 provider 仍可直接用 `httpx`.
+	- `OllamaProviderAdapter` 用于本地开发和集成测试.
+	- 所有 adapter 必须遵守统一 ProviderAdapter streaming 协议.
+	- OpenAI adapter 第一版只支持 Chat Completions 兼容流式接口:
+		- 面向 `/v1/chat/completions` 风格协议.
+		- 输入映射到 messages/tools/tool_choice.
+		- 输出消费 streaming chat delta.
+		- OpenAI Responses API 后续再作为独立能力补充.
+		- 第一版不要求 OpenAI provider 支持 Responses API.
+	- Anthropic adapter 第一版使用 Anthropic Messages streaming API:
+		- 使用 Anthropic 原生 messages / system / tools 协议.
+		- 支持 tool use / tool result 的标准映射.
+		- Anthropic 原始 streaming event 只在 adapter 内部处理.
+		- core 只接收统一 `ModelEvent`.
+	- Ollama adapter 第一版:
+		- 支持无工具 streaming 作为基础能力.
+		- 如果当前 Ollama API / 模型明确支持 tools, adapter 启用 tool call 映射.
+		- 如果 run 需要 tools 但当前 Ollama provider 不支持 tools, run 直接 failed, 不发送模型请求.
+		- 不用 prompt 约定模拟 tool call.
+	- 不设计统一 `ProviderCapabilities` 对象:
+		- provider 能力判断写在各 adapter 内部.
+		- 官方 provider adapter 按官方 API 能力实现.
+		- OpenAI / Ollama 这类能力不稳定的 provider, 由 adapter 根据配置、模型信息或请求特征自行判断.
+		- 如果 adapter 判断当前请求不支持, 返回/抛出结构化 provider capability error.
+		- core 不在发送模型请求前做统一能力矩阵校验.
+- Hook / command tool:
+	- 使用 `asyncio.create_subprocess_shell` 或 `asyncio.create_subprocess_exec`.
+	- stdin/stdout 都走 JSON 协议.
+	- timeout 和 exit code 由 adapter 统一处理.
+- 项目代码结构按标准 Python 工程组织:
+	- 使用 `src/` layout.
+	- 包目录固定为 `src/agent_core/`.
+	- 测试目录使用 `tests/`.
+	- CLI entry point 在 `pyproject.toml` 中声明为 `soong-agent = "agent_core.cli:main"`.
+- SDK 包结构建议:
+	- `src/agent_core/runtime`: loop, run state, event stream.
+	- `src/agent_core/provider`: provider adapter 和统一协议.
+	- `src/agent_core/context`: SQLite session, node tree, replay.
+	- `src/agent_core/tools`: tool adapter, registry, permission, execution.
+	- `src/agent_core/hooks`: hooks config, command hook runner.
+	- `src/agent_core/memory`: Memory Extraction Job, restricted memory writer, memory file store, recall.
+	- `src/agent_core/agents`: child agent, fork agent, orchestrator mode.
+	- `src/agent_core/tasks`: in-memory Task DAG, Task tools, WAL JSONL replay.
+	- `src/agent_core/config`: 用户级 `${SOONG_AGENT_HOME}/config.toml` loader 和 schema 校验.
+	- `src/agent_core/skills`: skill metadata scan and progressive disclosure.

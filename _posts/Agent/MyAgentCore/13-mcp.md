@@ -1,0 +1,32 @@
+# MCP
+
+- MCP 配置只放用户级:
+	- `${SOONG_AGENT_HOME}/mcp.json`
+- MCP server 属于用户信任的外部能力, 项目不直接声明 MCP server.
+- 用户级 config 可以启用/禁用某些已存在的 MCP tools.
+- MCP server 加载采用 lazy connect:
+		- SDK 启动时只读取 `${SOONG_AGENT_HOME}/mcp.json`, 形成 server catalog.
+	- run 需要 MCP tools 或 effective tool set 包含 MCP tools 时再连接 server.
+	- 连接后执行 tool discovery.
+	- 单个 server 失败只影响该 server 的 tools.
+- MCP discovery 使用进程内缓存:
+	- 缓存 tool list 和 schema.
+	- cache key 包含 server_id 和 server config hash.
+	- 缓存带 TTL.
+	- server config 变化或 TTL 过期后 refresh.
+	- 第一版不把 MCP discovery cache 持久化到 SQLite.
+- MCP server 失败处理:
+	- 写 `mcp_server_failed` event.
+	- 该 server 的 tools 不进入本轮 effective tool set.
+	- provider tool schema 和本轮可用工具视图都隐藏该 server 的 tools.
+	- 不让整个 run failed.
+	- 如果模型后续仍调用该工具, 返回 `tool_not_available`.
+- MCP tool permission:
+	- 由 MCP metadata + 用户 config override 决定.
+	- 默认 unknown/write 需要确认.
+	- 只有 MCP metadata 或 config 明确标为 readonly 时才自动允许.
+	- 用户可在 config 里按 server/tool 覆盖 permission 和 tags.
+- MCP tool canonical name:
+	- 使用 `mcp.<server_id>.<tool_name>`.
+		- server_id 来自 `${SOONG_AGENT_HOME}/mcp.json` 的稳定 key.
+	- 避免跨 server tool name 撞名.

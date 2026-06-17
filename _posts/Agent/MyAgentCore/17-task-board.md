@@ -1,0 +1,496 @@
+# Task Board
+
+- Task 是 orchestrator 模式下 Orchestrator 维护的内部执行 DAG.
+- Task 是内部对象, 默认不展示给用户.
+- Task 不使用 Markdown 文件.
+- Task 不写项目级 task md 文件, 不扫描 `.soong-agent/tasks/*.md`, 不解析 Task frontmatter.
+- Task 不使用 SQLite `tasks` / `task_attempts` / `task_dependencies` 当前状态表.
+- Task 当前状态只存在于运行时内存中的 Task DAG.
+- Task 持久化依赖项目级 append-only WAL JSONL.
+- runtime 启动或恢复 session 时 replay WAL JSONL 重建内存 Task DAG.
+- WAL JSONL 是 Task 的唯一持久化 source of truth.
+
+## Design Defaults
+- Task Board 是 Orchestrator 控制的内部协作 DAG, 不是用户可见的项目管理文档.
+- core 负责权限、状态机、WAL、恢复和一致性校验.
+- core 不负责复杂调度决策:
+	- 不根据自然语言做 step 优先级判断.
+	- 不根据任务内容给 worker 做相关性打分.
+	- 不维护 priority / order / reorder 字段.
+- Orchestrator 负责拆解任务、维护 DAG、选择 worker、限制 worker scope、汇总结果和决定 Task 终态.
+- worker sub agent 负责执行自己 claim 的 step, 只能更新执行状态和结果.
+- Orchestrator 可以修改 Task / Step 内容和 DAG 拓扑; worker sub agent 不能修改 Task 内容或 DAG 拓扑.
+- `dispatch_worker.allowed_step_ids` 是 Orchestrator 输出的工具参数, 用于硬限制 worker 本次可 query / claim 的 step 范围.
+- Task 级 cancel / fail 是强终止, 会终止所有未结束 step, 包括 claimed / running step.
+- terminal Task 只保留只读查询 / inspect / replay 能力, 不再接受 step 更新.
+
+## Storage
+- Task WAL 默认放在 `<project>/.soong-agent/tasks/<session_id>/<model-chosen-task-name>.wal.jsonl`.
+- 一个 session 对应一个 Task 目录.
+- 一个完整 Task DAG 对应一个 WAL JSONL 文件.
+- 同一个 session 允许多个 active Task DAG 同时存在.
+- 每个 active Task DAG 有独立 task_id 和独立 WAL JSONL.
+- Task tools 必须通过 task_id 明确定位要操作的 Task.
+- Task WAL 文件名由 Orchestrator / 模型根据 Task 描述生成候选名.
+- core 不从 title/summary 硬编码生成 task slug.
+- Task WAL 文件名和 task_id 不要求一致.
+- `agent.task_create` 同时接收 task_id 和 wal_name / wal_filename 候选.
+- core 在 task_create 时绑定 task_id 与 wal_path.
+- core 只校验模型给出的 Task WAL 文件名:
+	- 只允许安全文件名字符, 默认 `a-z0-9-_`.
+	- 文件名不含扩展名部分; core 追加 `.wal.jsonl`.
+	- 不允许 `/`, `..`, hidden filename, 空文件名或绝对路径.
+	- 超过长度限制返回 validation_error.
+	- 文件已存在时返回 path_conflict, 由模型选择新名字或请求用户处理.
+- `<project>/.soong-agent/tasks/<session_id>/` 目录只保存 Task WAL / 后续可选 snapshot, 不保存 Task Markdown.
+- 每一行 WAL 是一个独立 JSON object.
+- WAL event 必须包含:
+	- wal_seq
+	- session_id
+	- event_id
+	- event_type
+	- actor_agent_id
+	- actor_run_id
+	- task_id
+	- step_id 可选
+	- payload
+	- created_at
+- WAL 写入采用单 writer 队列.
+- Task 变更提交顺序:
+	- 校验权限、状态和 DAG 约束.
+	- append WAL JSONL.
+	- append 成功后更新内存 DAG.
+	- 发出 runtime event.
+- WAL append 失败时, 本次 Task 变更失败, 内存 DAG 不更新.
+- WAL replay 失败时, 对应 Task DAG 进入不可用状态并返回结构化 storage error.
+- Task 完成 / 失败 / 取消后, WAL 文件不移动.
+- runtime 恢复时默认跳过 terminal Task WAL, 不重建到 active Task DAG.
+- terminal Task 默认不出现在 active `agent.task_list` 结果中.
+- `agent.task_list(include_terminal=true)` 可以列出 terminal Task 摘要.
+- `agent.task_get` 可以读取 active 或 terminal Task; terminal Task 通过 replay WAL 重建只读视图.
+- `agent.task_get` 读取 terminal Task 时不写入 active Task DAG cache, 只生成临时只读视图.
+- `agent.task_list(include_terminal=true)` 不应无边界全量 replay 所有 terminal WAL.
+- v1 没有 terminal Task index 时, `agent.task_list(include_terminal=true)` 可以按限制数量 replay terminal WAL, 并返回截断/分页信息.
+- v1 不维护 Task WAL manifest / index.
+- `agent.task_list(include_terminal=true)` 默认最多返回 50 个 terminal Task 摘要.
+- `agent.task_list(include_terminal=true)` 支持 limit / offset.
+- `agent.task_list` 支持按 Task status 过滤.
+- terminal Task list 默认按 WAL 文件 mtime / Task updated_at 倒序.
+- inspect/replay 仍可读取 terminal Task WAL.
+- 第一版不做 terminal Task WAL 自动清理或 TTL.
+- 第一版不提供 task_archive / task_delete 工具.
+- 第一版不做 WAL compact/snapshot; 后续可增加 snapshot 加速恢复.
+
+## DAG Model
+- 一个 Task 表示一个完整 DAG.
+- DAG 中的节点就是可调度的 step.
+- Task DAG 字段:
+	- task_id
+	- wal_path
+	- title
+	- summary
+	- status
+	- root_step_ids
+	- steps
+	- created_by_agent_id
+	- created_by_run_id
+	- created_at
+	- updated_at
+- task_id 由 Orchestrator / 模型在 `agent.task_create` 输入中提供.
+- core 不从 title / summary / WAL 文件名自动生成 task_id.
+- core 只校验 task_id:
+	- 同一 session active Task 内唯一.
+	- 使用安全字符, 默认 `a-z0-9-_`.
+	- 不允许空字符串、过长 id 或包含路径语义的字符.
+- Step 字段:
+	- step_id
+	- title
+	- summary
+	- status
+	- depends_on_step_ids
+	- required: bool, 默认 true
+	- worker_pool_id 可选, 默认 Orchestrator 的 default worker pool
+	- claimed_by_agent_id 可选
+	- claimed_by_run_id 可选
+	- lease_expires_at 可选
+	- result_summary 可选
+	- artifact_ids
+	- updated_at
+- step_id 由 Orchestrator / 模型在 `agent.task_create` / `agent.task_update` 输入中提供.
+- core 不从 title / summary 自动生成 step_id.
+- core 只校验 step_id:
+	- 同一 Task DAG 内唯一.
+	- 使用安全字符, 默认 `a-z0-9-_`.
+	- 不允许空字符串、过长 id 或包含路径语义的字符.
+- Task / Step 的 title / summary / result_summary 等自然语言内容通常由模型通过 Task tool 生成或更新.
+- core 不依赖自然语言正文判断 DAG 状态.
+- DAG 拓扑、status、worker pool、claim、lease、artifact 等机器字段只由 Task tool 结构化输入和状态约束维护.
+- v1 不提供 Step priority / order / reorder 字段.
+- step 执行顺序主要通过 DAG depends_on_step_ids 表达.
+- Orchestrator 需要限制 worker 本次可处理范围时, 使用 `dispatch_worker.allowed_step_ids`.
+- Task DAG / WAL 中的 step status、result_summary、artifact_ids 是调度状态的 source of truth.
+- worker run 的 final result 可以作为 dispatch_worker tool result 返回, 但不反向覆盖 Task step 状态.
+
+## Status
+- Task status:
+	- pending
+	- running
+	- blocked
+	- completed
+	- failed
+	- cancelled
+- Step status:
+	- pending
+	- ready
+	- claimed
+	- running
+	- blocked
+	- completed
+	- failed
+	- cancelled
+- Step required=false 表示可选探索/辅助 step.
+- 只有全部 required=true 的 step completed 后, Task 才能 completed.
+- required=false 的 step 未完成不阻塞 `agent.task_complete`.
+- required=false 不改变依赖语义; 依赖满足仍只认 completed.
+- required=false step 如果处于 claimed / running, 仍会阻塞 `agent.task_complete`.
+- required=false step 如果处于 pending / ready, 会在 `agent.task_complete` 成功时自动 cancelled.
+- 如果 required=true step 依赖 required=false step, 该 optional step 仍必须 completed, 否则下游 required step 无法 ready / completed.
+- Task 创建后初始 status 为 pending.
+- 当 Task 中第一次出现 ready / claimed / running step 时, core 自动将 Task status 推进为 running.
+- Task 自动 running 推进必须写 `task_running` WAL event.
+- Task status=blocked 只能由 Orchestrator 显式设置.
+- core 不自动把 Task status 改成 blocked.
+- Task blocked 只改变 Task status, 不自动修改任何 step status.
+- Task blocked 不取消 claimed / running step 对应的 worker run.
+- 已经 running 的 worker run 可以继续结束并写回 step 结果.
+- blocked Task 中已存在的 claimed / running worker 仍允许通过 Task step tool 写回自己的 step 状态和结果.
+- worker 在 blocked Task 中写回 step completed / failed / blocked / cancelled 不会自动解除 Task blocked.
+- Task status=blocked 时, Orchestrator 不能继续 dispatch worker 处理该 Task.
+- Task 必须先通过 `task_reopened` 恢复到 pending, 才能继续 dispatch worker.
+- core 可以在查询/summary/inspect 中提供 stalled diagnostic, 例如没有 ready / claimed / running step 且存在 failed / blocked / pending step.
+- stalled diagnostic 不是 Task source of truth, 不写 Task WAL 状态变更.
+- blocked Task 可以由 Orchestrator 恢复.
+- Orchestrator 恢复 blocked Task 时, 将 Task status 改回 pending, 并写 `task_reopened` WAL event.
+- Task 恢复到 pending 后, core 重新执行 step ready 推进和 Task running 推进.
+- task_reopened 只恢复 Task 的调度资格, 不自动 dispatch worker.
+- Task status=completed 只能由 Orchestrator 通过 `agent.task_complete` 显式设置.
+- core 不自动把 Task status 改成 completed.
+- 当全部 required step completed 时, core 可以在查询/summary/inspect 中提供 completeable=true diagnostic.
+- completeable diagnostic 不是 Task source of truth, 不写 Task WAL 状态变更.
+- Task completeable 还要求没有 claimed / running step.
+- `agent.task_complete` 必须拒绝仍有 claimed / running step 的 Task, 包括 required=false optional step.
+- `agent.task_complete` 成功时, core 自动将仍处于 pending / ready 的 required=false optional step 标记为 cancelled.
+- 自动取消 optional step 必须为每个 step 写 `task_step_cancelled` WAL event.
+- Task status=failed 只能由 Orchestrator 显式设置.
+- core 不自动把 Task status 改成 failed; worker / step 失败只影响 step 状态.
+- Task failed 通过 `agent.task_fail` 设置.
+- `agent.task_fail` 会强制终止该 Task 下所有未结束 step, 包括 claimed / running step.
+- `agent.task_fail` 会取消 claimed / running step 对应的 worker run, 并将这些 step 写为 failed.
+- `agent.task_fail` 对 pending / ready / blocked step 写 `task_step_failed`.
+- completed / failed / cancelled step 保留原状态, 不被 task_fail 覆盖.
+- 所有由 `agent.task_fail` 触发的 step failed reason / result_summary 使用 `task_failed`.
+- Task failed 是整个 Task 的 terminal 状态, 不允许恢复.
+- Task cancelled 是整个 Task 的 terminal 状态, 不允许恢复.
+- Task completed / failed / cancelled 后, 所有 Task step 更新工具都返回 `task_terminal`.
+- Task terminal 后不再写任何 step 状态变更 WAL.
+- Task terminal 后迟到的 worker run 可以结束并持久化自己的 transcript / result, 但不能再修改 Task DAG.
+- 任一未完成依赖存在时, step 不能进入 ready / claimed / running.
+- 依赖满足只认依赖 step status=completed.
+- ready 是 core 根据依赖完成状态自动维护的状态.
+- Orchestrator 不需要也不应该手动把 step 置为 ready.
+- 当 pending step 的依赖全部 completed 且 step 未 blocked / cancelled 时, core 自动将其状态推进为 ready.
+- 自动 ready 推进必须写 `task_step_ready` WAL event.
+- blocked 解除只能由 Orchestrator 执行.
+- worker 可以把自己 claimed step 标记为 blocked 并写 blocked reason / result_summary.
+- worker 将 step 标记为 blocked 时, core 清空 claimed_by_agent_id / claimed_by_run_id / lease_expires_at.
+- blocked step 不再被当前 worker 占用, 需要 Orchestrator 介入恢复或修改 DAG.
+- worker 不能把 blocked step 改回 pending / ready.
+- Orchestrator 解除 blocked 时, 将 step 状态改回 pending; 之后 core 根据依赖完成状态自动推进 ready.
+- Orchestrator 解除 blocked 必须写 `task_step_reopened` WAL event.
+- blocked step 可以由 Orchestrator 修改 title / summary / depends_on_step_ids / worker_pool_id / required.
+- worker sub agent 不能修改 blocked step 内容或依赖.
+- failed step 可以恢复, 但只能由 Orchestrator 执行.
+- worker 可以把自己 claimed step 标记为 failed 并写失败原因.
+- worker 不能把 failed step 改回 pending / ready / running.
+- Orchestrator 恢复 failed step 时, 将 step 状态改回 pending; 之后 core 根据依赖完成状态自动推进 ready.
+- Orchestrator 恢复 failed step 必须写 `task_step_reopened` WAL event.
+- failed step 可以由 Orchestrator 修改 title / summary / depends_on_step_ids / worker_pool_id / required.
+- worker sub agent 不能修改 failed step 内容或依赖.
+- failed 不算依赖满足.
+- 依赖 failed step 的下游 step 不会自动 ready.
+- Orchestrator 需要恢复 failed step、修改 DAG 或新增补救 step.
+- cancelled step 是 step 级 terminal 状态, 不允许恢复.
+- cancelled step 可以由 Orchestrator 修改 title / summary, 但不能恢复为可执行状态.
+- cancelled step 的 depends_on_step_ids / worker_pool_id / required 不再影响调度.
+- 如果 cancelled step 的工作仍需要继续, Orchestrator 应新增 replacement step.
+- Orchestrator 可以将 pending / ready step 直接标记为 cancelled.
+- Orchestrator 不能取消 completed step.
+- 单个 claimed / running step 正在被 worker 执行, Orchestrator 不直接把它改为 cancelled.
+- 如需停止单个 claimed / running step, Orchestrator 应取消对应 worker run; core 按 worker 取消兜底将 step 标记为 failed, 或由 Orchestrator 修改后续 DAG.
+- Task 级 `agent.task_cancel` / `agent.task_fail` 是例外: 它们会强制终止 claimed / running step.
+- 如果 cancelled 后仍需继续相关工作, Orchestrator 应修改 DAG 或新增替代 step.
+- cancelled 不算依赖满足.
+- 依赖 cancelled step 的下游 step 不会自动 ready.
+- Orchestrator 需要显式修改 DAG、取消下游 step 或新增替代路径.
+- worker claimed step 后, 可以从 claimed 直接进入 blocked / completed / failed / cancelled.
+- running 是可选的执行开始状态, 不是进入 blocked / completed / failed / cancelled 的前置条件.
+- completed step 是执行历史事实.
+- completed step 不允许删除或修改 result_summary / artifact_ids 等执行结果历史.
+- Orchestrator 可以修改 completed step 的 title / summary 用于澄清展示, 但不能改变它已经 completed 的事实.
+- 如果 completed step 结果需要修正, Orchestrator 应新增补救 step 或修改下游 DAG.
+- Orchestrator 可以修改 pending / ready / blocked / failed / claimed / running step 的 title / summary / depends_on_step_ids / worker_pool_id / required.
+- Orchestrator 修改 claimed / running step 内容或依赖时, 不会自动影响已派发 worker run 的当前上下文; 如需 worker 停止, Orchestrator 应取消 worker run 或执行 Task 级终止.
+- Orchestrator 修改 claimed / running step 后, core 不自动向正在运行的 worker 注入更新消息.
+- Orchestrator 修改 claimed / running step 的依赖后, 即使新依赖不满足, 当前 worker run 也不自动停止, step 状态保持 claimed / running.
+- Orchestrator 修改 claimed / running step 时, core 必须在 task_updated payload / debug metadata 中记录该 step was updated after dispatch.
+- inspect/debug 应能展示 running worker 看到的 dispatch-time step 摘要和当前 Task DAG 中的最新 step 摘要.
+- Orchestrator 对 step 内容、依赖、worker_pool_id、required 的修改通过 `task_updated` patch 记录, 不额外写 `task_step_updated`.
+- Orchestrator 修改依赖后, core 只对 pending / ready step 重新计算 ready/pending 状态.
+- blocked / failed step 被修改依赖后保持 blocked / failed, 不自动 reopen; 必须由 Orchestrator 显式 reopen_step.
+- cancelled step 被修改 title / summary 后保持 cancelled, 不重新参与调度.
+- worker sub agent 不能修改 step title / summary / depends_on_step_ids / worker_pool_id / required.
+- Orchestrator 修改 step 后, core 必须重新校验依赖和 DAG 约束.
+- 对 pending / ready step, 如果修改后依赖不满足, step 回到 pending; 如果依赖满足, core 保持或重新推进为 ready.
+- Orchestrator 只允许删除 pending / ready / cancelled step.
+- Orchestrator 不能删除 blocked / failed / completed / claimed / running step.
+- 删除未完成 step 时, 如果仍有任何下游 step 依赖它, core 必须拒绝并返回 `step_has_dependents`.
+- Orchestrator 必须先显式修改下游 depends_on_step_ids, 才能删除被依赖的 step.
+- core 不自动移除下游依赖, 也不级联删除下游 step.
+- Task failed / cancelled / completed 是整个 Task 的 terminal 状态, 不按 step 恢复规则恢复.
+- 创建或修改 DAG 时必须做 cycle check.
+- 检测到依赖环时返回 `dependency_cycle`.
+
+## Orchestrator Ownership
+- Orchestrator 指 orchestrator 模式下负责任务拆解、下发和汇总的主 agent.
+- 只有 Orchestrator 可以创建 Task DAG.
+- 只有 Orchestrator 可以修改 Task 内容:
+	- task title / summary
+	- step title / summary
+	- DAG 拓扑
+	- depends_on_step_ids
+	- 新增 / 删除 / 拆分 / 合并 step
+	- step worker_pool_id
+	- step required
+- Orchestrator 不需要把每个 step 显式分配给具体 worker.
+- Orchestrator 负责维护 DAG、blocked 状态和 worker_pool_id; ready 由 core 自动维护.
+- ready queue 是被动可领取集合, 不触发 runtime 自动调度.
+- worker sub agent 只有在 Orchestrator 通过 `agent.dispatch_worker` 启动 worker run 后, 才查询 ready queue 并领取 step.
+- worker sub agent 每次 run 最多领取一个 step.
+- worker sub agent 不能修改 Task 内容.
+- worker sub agent 可以读取自己可见的 Task / Step.
+- worker sub agent 可以领取自己可执行的 step.
+- worker sub agent 可以更新自己 claimed step 的执行状态:
+	- claimed
+	- running
+	- blocked
+	- completed
+	- failed
+- worker sub agent 可以为自己 claimed step 写 result_summary / artifact_ids.
+- worker sub agent 不能修改其他 step.
+- worker sub agent 不能修改 DAG 拓扑.
+
+## Task Tools
+- Task tools 是内置 internal tools.
+- Task tools 不直接修改业务项目文件.
+- Task tools 修改内存 DAG 并追加 WAL JSONL.
+- 所有 Task tool 输入都隐式携带 actor_agent_id / actor_run_id / session_id.
+- core 从当前 RunContext 注入 actor 字段, 不信任模型显式传入的 actor 字段.
+- Task tools:
+	- `agent.task_template`
+	- `agent.task_create`
+	- `agent.task_get`
+	- `agent.task_list`
+	- `agent.task_update`
+	- `agent.task_query_steps`
+	- `agent.task_claim_step`
+	- `agent.task_update_step`
+	- `agent.task_complete`
+	- `agent.task_fail`
+	- `agent.task_cancel`
+- `agent.task_template`:
+	- 读取 SDK 内置 Task DAG 写作模板.
+	- 返回类似 skill loading 的 synthetic user block.
+	- 返回内容用于指导 Orchestrator 下一轮生成结构化 DAG.
+	- 不创建 Task.
+	- 不修改内存 DAG.
+	- 不写 WAL.
+- `agent.task_create`:
+	- 只允许Orchestrator 使用.
+	- 输入是完整 Task DAG 结构.
+	- 校验 step id、依赖、环、重复节点和必填字段.
+	- 创建内存 DAG.
+	- 写 `task_created` WAL event.
+- `agent.task_update`:
+	- 只允许Orchestrator 使用.
+	- 修改 Task 内容或 DAG 拓扑.
+	- Task / Step 内容字段、依赖、required、worker_pool_id 的修改都通过 `agent.task_update` 完成.
+	- 支持一次提交多个变更, 例如新增多个 step、修改多个 dependency、取消多个 step.
+	- 输入使用结构化 patch operations, 不使用完整 DAG 替换.
+	- 第一版 patch operations 包括:
+		- update_task
+		- add_step
+		- update_step
+		- delete_step
+		- add_dependency
+		- remove_dependency
+		- cancel_step
+		- reopen_step
+	- patch operation 通用字段:
+		- op: operation 名称.
+		- step_id: step 级 operation 必填.
+		- reason 可选, 用于 cancel / reopen / 重要结构变更.
+	- update_task 字段:
+		- title 可选.
+		- summary 可选.
+	- add_step 字段:
+		- step: 完整 Step 输入, 必须包含 step_id, title, summary, depends_on_step_ids.
+		- required 可选, 默认 true.
+		- worker_pool_id 可选.
+	- update_step 字段:
+		- fields: 可修改 title, summary, depends_on_step_ids, required, worker_pool_id.
+	- delete_step 字段:
+		- step_id.
+	- add_dependency / remove_dependency 字段:
+		- step_id.
+		- depends_on_step_id.
+	- cancel_step 字段:
+		- step_id.
+		- reason 可选.
+	- reopen_step 字段:
+		- step_id.
+		- reason 可选.
+	- update_task 可以修改 task title / summary.
+	- patch operations 按模型给出的顺序应用到临时 DAG.
+	- core 不重排 patch operations.
+	- 所有 operations 应用到临时 DAG 后, core 对最终 DAG 做整体校验.
+	- 批量 update 是原子的; 任一变更校验失败时, 整个 update 不写 WAL, 内存 DAG 不更新.
+	- 每次成功 update 写一个 `task_updated` WAL event, payload 包含 patch 列表.
+- `agent.task_query_steps`:
+	- 允许Orchestrator 查询任意 active Task / Step.
+	- 查询 terminal Task 时只返回只读结果, 不允许后续 step 更新.
+	- 允许 worker sub agent 查询自己可见的 step.
+	- 常用查询条件包括 task_id, statuses, worker_pool_id, claimed_by_agent_id.
+	- statuses 支持多个 Step status.
+	- 默认不返回 completed / failed / cancelled step.
+	- 需要 terminal step 时必须显式传 include_terminal_steps=true.
+	- 支持 limit / offset, 默认 limit=50.
+	- 默认排序为 created_at 升序, 保持接近模型创建 DAG 时的计划顺序.
+	- core 不按 ready / running / blocked 等状态做复杂优先级排序; 具体 step 选择交给 Orchestrator / worker 模型判断.
+	- worker run 只能查询本次 `agent.dispatch_worker.task_id` 指定的 Task.
+	- worker 查询 ready step 时, 只返回其所属 worker pool 内、依赖已完成、未被有效 lease 占用的 step.
+	- worker 查询 ready step 默认 limit=5, 返回多个候选供 worker 模型判断.
+	- 如果当前 worker run 由 `agent.dispatch_worker` 指定 allowed_step_ids, 查询结果还必须受 allowed_step_ids 限制.
+	- allowed_step_ids 是硬 scope; worker 不能 query / claim 范围外的 step.
+	- allowed_step_ids 省略表示不按 step id 限制.
+	- allowed_step_ids 为空数组时返回 validation_error.
+	- allowed_step_ids 中重复 step_id 由 core 去重.
+	- allowed_step_ids 可以包含未 ready step; 查询 ready step 时只返回其中已 ready 的候选.
+	- 如果 allowed_step_ids 内没有 ready step, worker 返回 no_step_claimed=true.
+	- 查询前 core 会先处理已过期 lease.
+- `agent.task_claim_step`:
+	- 允许 worker sub agent 使用.
+	- worker run 只能 claim 本次 `agent.dispatch_worker.task_id` 指定 Task 内的 step.
+	- 同一个 worker run 最多只能 claim 一个 step.
+	- worker run 已经成功 claim 一个 step 后, 再次调用 `agent.task_claim_step` 返回 `step_already_claimed_by_run`.
+	- 只能领取 ready、自己可见、依赖已完成、没有有效 lease 的 step.
+	- 如果当前 worker run 由 `agent.dispatch_worker` 指定 allowed_step_ids, 只能领取 allowed_step_ids 内的 step.
+	- allowed_step_ids 内 step 尚未 ready 时不能领取, 但不视为 dispatch validation error.
+	- claim 是原子操作; 并发领取同一 step 时只有一个 actor 成功.
+	- 并发 claim 冲突是正常情况; 失败方返回 `step_already_claimed`, 不视为 worker run 失败.
+	- worker 收到 `step_already_claimed` 后应重新 `agent.task_query_steps` 查询其他可执行 step.
+	- 如果没有可执行 step, worker 返回 `no_step_claimed` 结构化结果, 作为正常完成结果交给 Orchestrator.
+	- no_step_claimed 是正常成功结果, 不视为 tool error 或 worker failure.
+	- `step_already_claimed` / `no_step_claimed` 不写 Task WAL, 因为 Task DAG 状态没有变化.
+	- core 可以写 runtime/SQLite event 用于 inspect/debug.
+	- 成功后设置 claimed_by_agent_id, claimed_by_run_id, lease_expires_at, 并将 step 状态置为 claimed.
+	- claim 成功不会自动把 step 推进为 running.
+	- worker 必须显式调用 `agent.task_update_step(status=running)` 才会进入 running.
+	- worker 可以跳过 running, 直接将自己 claimed step 标记为 blocked / completed / failed / cancelled.
+	- 写 `task_step_claimed` WAL event.
+- `agent.task_update_step`:
+	- 用于更新 step 执行状态和执行结果, 不用于修改 Task / Step 内容或 DAG 拓扑.
+	- 允许Orchestrator 更新任意 step 的执行状态和结果.
+	- 允许 worker sub agent 更新自己 claimed step 的执行状态和结果.
+	- 如果 Task 已经 completed / failed / cancelled, 返回 `task_terminal`, 不写 WAL.
+	- 任何 agent 都不能通过 `agent.task_update_step` 修改 step title / summary / depends_on_step_ids / worker_pool_id / required.
+	- Orchestrator 如需修改这些内容字段, 必须使用 `agent.task_update`.
+	- completed step 的执行结果历史不能通过任何 Task tool 修改.
+	- worker sub agent 可以把自己 claimed step 标记为 blocked, 但不能解除 blocked.
+	- 解除 blocked 只能由 Orchestrator 将 step 改回 pending.
+	- worker sub agent 可以把自己 claimed step 标记为 failed, 但不能恢复 failed.
+	- 恢复 failed 只能由 Orchestrator 将 step 改回 pending.
+	- worker sub agent 更新 running 等非 terminal 执行状态时默认刷新 lease_expires_at.
+	- worker sub agent 写 blocked / completed / failed / cancelled 时结束当前 lease.
+	- 当状态从 claimed 变更为 running 时, 写独立 `task_step_started` WAL event.
+	- 非 terminal 更新写 `task_step_updated` WAL event.
+	- 当状态变更为 blocked 时, 写独立 `task_step_blocked` WAL event.
+	- 当状态变更为 completed / failed / cancelled 时, 分别写独立 `task_step_completed` / `task_step_failed` / `task_step_cancelled` WAL event.
+	- `task_step_updated` 不用于表示 started / blocked 或 terminal 状态变更.
+- worker run 结束兜底:
+	- 如果 worker run 结束时仍持有 claimed / running step, 且该 step 没有进入 completed / failed / blocked / cancelled, core 自动将该 step 标记为 failed.
+	- 正常结束但未写终态时, failed reason / result_summary 使用 `worker_finished_without_terminal_step_status`.
+	- 用户取消 worker run 时, failed reason / result_summary 使用 `worker_cancelled`.
+	- worker run 超时时, failed reason / result_summary 使用 `worker_timeout`.
+	- 该兜底变更必须写 `task_step_failed` WAL event.
+	- 兜底只处理当前 run claimed_by_run_id 对应的 step, 不影响其他 worker 的 claim.
+- `agent.task_complete` / `agent.task_fail` / `agent.task_cancel`:
+	- 只允许Orchestrator 使用.
+	- 负责关闭整个 Task DAG.
+	- `agent.task_complete` 必须校验全部 required step 已 completed.
+	- `agent.task_complete` 必须校验没有 claimed / running step.
+	- `agent.task_complete` 成功时自动取消 pending / ready optional step.
+	- `agent.task_fail` 强制终止所有未结束 step, 包括 claimed / running step.
+	- `agent.task_cancel` 强制终止所有未结束 step, 包括 claimed / running step.
+	- `agent.task_fail` / `agent.task_cancel` 遇到 claimed / running step 时, core 先请求取消对应 worker run, 再写 step 终态事件.
+	- worker run cancellation 最长等待 `agents.child_cancel_timeout_ms`.
+	- worker run cancellation 超时不阻塞 Task 进入 terminal; core 写 child_agent_cancel_timeout event, 然后继续写 step 和 Task 终态 WAL.
+	- `agent.task_fail` 将 pending / ready / blocked / claimed / running step 标记为 failed, reason 为 `task_failed`.
+	- `agent.task_cancel` 将 pending / ready / blocked / claimed / running step 标记为 cancelled, reason 为 `task_cancelled`.
+	- completed / failed / cancelled step 保留原状态, 不被 `agent.task_fail` / `agent.task_cancel` 覆盖.
+	- Task 级终止触发的 worker run cancellation 不使用普通 `worker_cancelled` step failed 兜底; 如果 step 已由 Task 级终止写入终态, worker run 结束兜底跳过该 step.
+	- 写 `task_completed` / `task_failed` / `task_cancelled` WAL event.
+
+## Step Claim Lease
+- Step claim 使用 lease 防止 worker 崩溃或长时间无响应导致 step 永久占用.
+- lease 时长使用 `task.step_lease_timeout_ms`.
+- lease 未过期时, 其他 worker 不能 claim 同一 step.
+- 持有 claim 的 worker 调用 `agent.task_update_step` 更新 running / blocked 等非 terminal 状态时, core 自动续租.
+- 持有 claim 的 worker 写 completed / failed / cancelled 后, step 不再参与 ready queue.
+- lease 过期处理:
+	- `agent.task_query_steps` / `agent.task_get` / runtime 恢复 active Task 时先执行 lease reconciliation.
+	- 如果 claimed / running step 的 lease_expires_at 已过期且没有 terminal event, core 追加 `task_step_lease_expired` WAL event.
+	- `task_step_lease_expired` 必须写 Task WAL, 因为它会改变 Task source of truth: 清空 claim 并把 step 恢复为 pending.
+	- 过期后清空 claimed_by_agent_id / claimed_by_run_id / lease_expires_at, 将 step 状态恢复为 pending.
+	- 随后 core 重新执行 ready 推进; 如果依赖仍满足, 再写 `task_step_ready` WAL event 并将 step 推进为 ready.
+	- Orchestrator 之后可以继续让 worker claim, 或修改 DAG 增加补救 step.
+- lease 过期不是 Task 失败; 只有 Orchestrator 显式把整个 Task 标记为 failed / cancelled / completed 时, Task 才进入 terminal 状态.
+
+## Tool Return Shape
+- Task template tool 返回的内容作为 user/context block 注入模型上下文.
+- Task 查询 tool 可以返回结构化 JSON result.
+- Task 写入 tool 返回最新 Task DAG 摘要和写入的 WAL event_id.
+- 大 Task DAG 超过上下文预算时, tool result 只返回摘要和可查询引用.
+- 完整 Task DAG 通过 `agent.task_get` 按 task_id 查询.
+
+## Permission
+- Task tools 需要 core 做权限校验.
+- worker sub agent 的 effective tool set 默认只包含 Task 读取、query ready step、claim step、更新自己 claimed step 的执行状态和结果.
+- 普通 sub agent / fork agent 默认不暴露 Task tools.
+- 非 Orchestrator 如果调用不可用 Task tool, core 返回 `tool_not_available`.
+- 非 Orchestrator 如果越权修改 Task 内容, core 返回 `permission_denied`.
+- Orchestrator 的 Task 写入也必须通过状态、DAG 和 WAL 校验.
+- Task tools 是 internal context tools, 不触发面向用户的普通 file write permission prompt.
+- Task tools 不替代普通 file write permission; 它们不能写业务项目文件.
+
+## Prompt Context
+- prompt composer 可按需注入压缩后的 Task DAG summary.
+- Task DAG summary 作为 internal synthetic user/context message 注入.
+- summary 包含:
+	- active tasks
+	- ready / running / blocked steps
+	- 当前 agent claimed / running steps
+	- 当前 worker pool 可领取的 ready steps
+	- recent WAL changes
+- summary 受 `context.task_board_token_budget` 限制.
+- 超出 budget 时优先保留 blocked / running / 当前 agent claimed / running steps.
+- 完整 Task WAL timeline 通过 inspect/replay 查询.

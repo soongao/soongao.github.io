@@ -1,0 +1,163 @@
+# Instructions & Skills
+
+- Prompt composer 区分 system prompt 和 non-system prompt.
+- System prompt 分为:
+	- static system blocks: core builtin instructions, agent role/mode, provider adaptation hints, tool catalog, tool protocol, permission/hook behavior, Todo 行为说明, instruction catalog.
+	- dynamic system blocks: AgentDefinition body for child/sub/fork agents, loaded instruction content, skill catalog, `MEMORY.md` catalog, runtime state.
+- Todo 只在 static system prompt 中说明:
+	- Todo 是模型内部 scratchpad.
+	- 没有 todo tool.
+	- 不持久化 todo.
+	- 不把 todo 当成 Task DAG.
+- 静态 system prompt 可以描述所有内置工具类别, 但 provider 实际可调用工具只来自当前 run 的 effective tool set.
+- 第一版不实现真实 toolSelect 工具; 模型按 system prompt 自行选择工具.
+- 如果模型调用当前不可用工具, core 返回 `tool_not_available`.
+- Skill body 不进入 static system prompt; skill 通过 `load_skill` tool 渐进式加载, 并作为 skill_context node 进入普通上下文.
+- Memory 全文不直接进入 system prompt; memory 通过 `recall_memory` tool 渐进式加载, 并作为 memory_context node 进入普通上下文.
+- Non-system prompt 包括 active path messages, compaction summary, skill_context, memory_context, plan_instruction, task_instruction, task_board summary, child agent result, tool result summary, artifact preview, 当前 user message 附件摘要, 以及 hook 显式追加的执行提示.
+- AgentDefinition body:
+	- 只在 child/sub/fork agent run 中注入.
+	- 作为 dynamic system block 注入子 agent 的 system prompt.
+	- 优先级低于 core builtin system / safety / tool protocol.
+	- 父 agent 传入的 task / instruction / context 作为子 agent 的 user/context block 注入, 不进入 system prompt.
+- Plan instruction:
+	- `agent.plan_template` 读取内置 Plan 写作模板.
+	- `agent.plan_template` 返回 `node_type=plan_instruction` 的 synthetic user/context block.
+	- 模型根据该 block 选择文件名, 再调用普通 write/edit tool 写入 `<project>/.soong-agent/plans/<model-chosen-name>.md`.
+	- core 不自动读取 Plan Markdown.
+	- 模型需要计划内容时, 像处理普通文件一样调用内置 read tool 读取该 path.
+- Task instruction:
+	- task template tool 读取内置 Task DAG 写作模板.
+	- task template tool 返回 `node_type=task_instruction` 的 synthetic user/context block.
+	- Orchestrator 根据该 block 调用 `agent.task_create` 创建结构化内存 DAG.
+- Task board summary 可按需进入 non-system prompt:
+	- prompt composer 从内存 Task DAG 和 recent Task WAL changes 构造摘要.
+	- 不查询 SQLite task 表.
+	- 不扫描 Task Markdown.
+	- 触发条件包括 orchestrator run.
+	- 当前 run 调用了 task tool.
+	- 存在 blocked/running task 或 ready/running/blocked step.
+	- 用户询问进度时, 默认由主 agent 结合可见结果生成自然语言总结, 不直接暴露 task board.
+	- prompt composer 判断任务状态与当前请求相关.
+	- summary 包含 active/incomplete tasks.
+	- summary 包含 blocked tasks / steps.
+	- summary 包含当前 agent claimed / running steps.
+	- summary 包含当前 worker pool 可领取的 ready steps.
+	- summary 包含 recent Task WAL changes.
+	- completed tasks 默认不进入常规 summary 列表.
+	- recently completed tasks 只允许在 recent task changes 中短暂出现.
+	- recent task changes 受数量和时间双限制:
+		- context.task_recent_changes_limit 默认 20.
+		- context.task_recent_changes_window_minutes 默认 30.
+	- summary 排序优先级:
+		- blocked tasks / steps.
+		- running tasks / steps.
+		- 当前 agent claimed / running steps.
+		- 当前 worker pool ready steps.
+		- recent Task WAL changes.
+	- summary 受 context.task_board_token_budget 限制.
+	- 超出 budget 时优先保留 blocked / running / 当前 agent claimed / running steps.
+	- 被裁剪的 task 只保留按 status 聚合的计数摘要.
+	- 每项包含 task_id, step_id, status, worker_pool_id, claimed_by_agent_id, lease_expires_at, summary, artifact_ids.
+	- 以 synthetic user/context message 形式进入上下文.
+	- 使用 `<task_board>...</task_board>` 包裹.
+	- metadata 标记 `synthetic=true`, `source=task_board`.
+	- 完整 task timeline 通过 Task WAL inspect/replay 查询.
+- 内部上下文 node 映射:
+	- skill_context / memory_context / compaction / child_result 等内部 node 进入模型时映射为 user role 的 context message.
+	- 这些 message 使用固定 header/footer 或 XML-like 标签标明来源.
+	- 不把 skill body / memory body / compaction summary 提升成 system 指令.
+	- 映射后的 message metadata 标记 `synthetic=true`.
+	- metadata 同时记录 source_node_type 和 source_node_id.
+- 上下文预算:
+	- static system prompt 永远保留.
+	- 固定预留 output tokens.
+	- dynamic system 先做 relevance selection, 再受 dynamic_system_budget 约束; 超出预算时只裁 dynamic system, 不动 static system.
+	- non-system prompt 使用剩余预算, 不够时裁剪旧消息、artifact previews 和已被 compact summary 覆盖的内容.
+	- active path 放不下时触发 compact / recovery compact.
+- Prompt composer 裁剪策略:
+	- 优先保留当前 user message.
+	- 优先保留最近一轮未 consumed 的 plan_instruction / task_instruction.
+	- 优先保留最近 assistant/tool 交互.
+	- 优先保留最新 compaction summary.
+	- 优先保留已加载的 skill_context / memory_context.
+	- 被 compaction summary 覆盖的旧节点默认不进入上下文.
+	- 剩余旧消息按 token budget 从旧到新裁剪.
+- 最近 assistant/tool 交互按 turn/group 保留:
+	- assistant tool_call + 对应 tool_result + 后续 assistant response 作为逻辑 group.
+	- 裁剪时尽量整组保留或整组裁掉.
+	- 避免 tool_call 和 tool_result 在上下文里断开.
+- 必须保留的 group 过大时做二级压缩/降级:
+	- 先 artifact 化大 content block.
+	- 再生成更短 summary.
+	- 如果仍然超预算, 触发 recovery compact.
+	- recovery compact 后仍放不下, run end_reason 为 prompt_too_long.
+- 每次构造上下文都生成轻量 `ContextBuildReport`:
+	- token budget 使用情况.
+	- 保留的 node id.
+	- 裁剪的 node id.
+	- 使用的 compaction node.
+	- system block selection 结果.
+	- artifact 降级/summary 情况.
+	- 默认写入 `context_built` event payload.
+	- debug 模式保存详细 report artifact.
+- 冲突优先级采用类系统消息优先级:
+	- core/builtin 永远最高.
+	- instruction / skills / memory 不能覆盖 safety, permission, tool protocol.
+	- 用户可以覆盖偏好类内容, 但不能覆盖系统约束.
+- Instructions 使用渐进式披露:
+	- static system prompt 不是代码硬编码的大字符串, 而是 runtime 启动 / run 开始时构造的 system blocks.
+	- core 会扫描 instruction 文件的 frontmatter 元信息, 构造 `instruction_catalog` system block.
+	- `instruction_catalog` 只包含路径和 frontmatter 元信息, 不包含正文.
+	- 没有 frontmatter 的 instruction 文件不跳过, catalog 使用相对路径作为基础元信息.
+	- 模型根据 `instruction_catalog` 判断是否需要读取具体 instruction 文件.
+	- 模型使用普通 `code.read_file` 读取 instruction 文件正文.
+	- core 不提供 `load_instruction` tool.
+	- core 不根据 path/glob 硬编码选择局部 instruction.
+	- core 不自动把所有 instruction 正文塞进 prompt.
+- Instruction 文件位置:
+	- 用户级:
+		- `${SOONG_AGENT_HOME}/CLAUDE.md`
+		- `${SOONG_AGENT_HOME}/AGENTS.md`
+		- `${SOONG_AGENT_HOME}/rules/**/*.md`
+	- 项目级:
+		- `<project>/CLAUDE.md`
+		- `<project>/AGENTS.md`
+		- `<project>/<subdir>/CLAUDE.md`
+		- `<project>/<subdir>/AGENTS.md`
+	- 不存在 `<project>/.soong-agent/rules`.
+	- 不存在项目级 skills / agents 目录.
+- Instruction 扫描:
+	- 每次 run 开始重新扫描 instruction catalog.
+	- 扫描项目下 `**/CLAUDE.md` / `**/AGENTS.md`.
+	- 扫描时跳过 `.git`, `node_modules`, `.venv`, `venv`, `dist`, `build`, `target`, `.next`, `.cache`, `__pycache__`.
+	- catalog 默认最多 200 个 instruction 文件; 超过时按路径排序截断并标记 catalog truncated.
+	- 同目录同时存在 `CLAUDE.md` 和 `AGENTS.md` 时, catalog 只展示 `CLAUDE.md`.
+	- `CLAUDE.md` 优先于 `AGENTS.md`.
+- Instruction 正文加载:
+	- 当 `code.read_file` 读取的路径被识别为 instruction 文件时, core 除返回普通 file read result 外, 还将该文件正文注册为 dynamic system block.
+	- 对普通业务 Markdown 文件调用 `code.read_file` 不会注册 dynamic system block.
+	- dynamic instruction block 也可以写入 SQLite node, `node_type=instruction_context`, 方便 replay/inspect.
+	- 重复读取同一 instruction 文件时, 如果 active path 已加载且文件 hash 未变, 不重复创建 instruction_context; tool result 标记 already_loaded.
+	- 已加载 instruction 文件在后续 prompt 构造时检查 mtime/hash; 文件变化后重新读取并更新 dynamic system block.
+	- instruction 正文过大时按 dynamic system budget 裁剪/摘要; 不 artifact 化全文, 因为原文件本身已经存在.
+	- 读到的 instruction 内容应遵守, 但不能覆盖 core safety、permission 和 tool protocol.
+- Skills 使用渐进式披露:
+	- 每个 skill 一个 md 文件.
+	- 不需要 `SKILLS.md`.
+	- skill md frontmatter 是 metadata source of truth, 必填字段只有 `name` 和 `description`.
+	- 渐进式披露触发只依赖 `name + description`.
+	- 其他 frontmatter 字段可以保留到 metadata, 但 core 第一版不依赖.
+	- 启动/首次使用时只扫描 `name + description` 形成 skill catalog.
+	- system prompt 暴露 skill catalog, 主模型判断是否需要加载 skill.
+	- 主模型通过内置 `load_skill(name)` tool 请求加载 skill.
+	- `load_skill` 是 readonly + internal tag, 不需要用户确认, event log 标记 internal.
+	- `load_skill` 读取 skill md body 后, 写入内部 node type `skill_context`.
+	- `skill_context` metadata 记录 skill_name, skill_path, skill_hash, loaded_by_tool_call_id.
+	- 发给模型时, `skill_context` 映射为 synthetic user/context message.
+	- skill context message 用固定 header/footer 包裹, 例如 `<skill name="...">...</skill>`.
+	- 重复调用 `load_skill(name)` 时, 如果 active path 已加载且 skill 文件 mtime/hash 未变, 返回 already_loaded, 不重复注入 body.
+	- 如果 skill 文件变了, 重新读取并注入新版 skill_context.
+	- Skill 文件位置:
+		- `${SOONG_AGENT_HOME}/skills/*.md`
+	- 第一版 skill catalog 只做内存 cache.

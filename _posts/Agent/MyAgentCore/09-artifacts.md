@@ -1,0 +1,51 @@
+# Artifacts
+
+- Artifact 指 agent 运行过程中产生或捕获的运行产物, 不是普通项目文件.
+- 典型 artifact:
+	- 大 tool result.
+	- 长测试/build/API 日志.
+	- 子 agent 详细产物.
+	- compact 原文或摘要产物.
+	- provider raw response / hook log / debug trace.
+	- 图片、PDF、screenshot、二进制文件.
+	- 大 JSON / CSV / profiling result.
+- Artifacts 按 session 存放:
+		- `${SOONG_AGENT_HOME}/sessions/<session_id>/artifacts/<artifact_id>/<filename>`
+	- artifact_id 负责唯一性.
+	- filename 只做人读和下载展示, 不作为唯一标识.
+	- artifact registry 以 artifact_id 为主键.
+- message/tool_result 中只放 summary + artifact_ref.
+- Artifact 写入两种方式都支持, 推荐 core 负责:
+	- 简单 tool 返回 artifact payload, core 落文件并生成 artifact_ref.
+	- 高级 tool 可以自己生成文件, 再让 core 注册为 artifact.
+- artifact id, metadata, path, size, mime_type, session 归属由 core 统一维护.
+- 第一版不计算 artifact 内容 hash.
+- 第一版不做 artifact 内容去重.
+- 第一版不自动 GC artifact.
+- artifact 删除通过显式 API:
+	- `delete_session(session_id)` 删除 session 及其 artifacts.
+	- `delete_artifact(artifact_id)` 删除单个 artifact 及 registry 记录.
+	- `cleanup_artifacts(session_id=None, dry_run=True, include_all=False, older_than=None, max_bytes=None)` 清理 artifact.
+- `cleanup_artifacts` 默认 `dry_run=true`.
+- `cleanup_artifacts` 默认只清理 debug/raw provider artifacts、hook debug logs、redacted traceback 等调试产物.
+- 普通 artifacts 默认保留, 只有显式 `include_all=True` 才纳入 cleanup 候选.
+- `delete_session(session_id)` 不删除 memory:
+	- Memory 是用户级长期知识, 不归 session 生命周期.
+	- 如果 session 仍有 running / queued run, `delete_session` 默认拒绝并返回 `session_active`.
+	- 调用方必须先 cancel run 并等待终态, 再删除 session.
+	- session 删除会清理 nodes, events, runs, agents, artifacts.
+	- session 删除默认不删除项目级 Plan Markdown 文件.
+	- Plan Markdown 是普通项目文件.
+	- Task WAL 是项目级文件; delete_session 第一版不自动删除 `<project>/.soong-agent/tasks/<session_id>/*.wal.jsonl`.
+	- 如果调用方需要清理 Task WAL, 使用单独 project cleanup / session cleanup 选项.
+	- `cleanup_project_tasks(project, dry_run=True, include_failed=False, include_cancelled=False, older_than=None)` 用于清理 terminal Task WAL.
+	- `cleanup_project_tasks` 默认 `dry_run=true`.
+	- `cleanup_project_tasks` 默认只清理 completed Task WAL.
+	- failed / cancelled Task WAL 必须显式传 include_failed / include_cancelled 才纳入候选.
+	- 如果后续要支持删除某次 session 产生的 memory, 需要独立 provenance 和显式 API.
+- run 完成后不自动删除 artifact, 保证 inspect / replay 可用.
+- 自动 artifact 化使用 byte + token 双阈值:
+	- 超过字节阈值就落 artifact.
+	- 或超过 token 估算阈值也落 artifact.
+	- 阈值放在 `config.toml`.
+	- tool 可以主动要求 artifact 化.

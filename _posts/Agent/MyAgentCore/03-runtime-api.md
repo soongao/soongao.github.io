@@ -1,0 +1,48 @@
+# Runtime API
+
+- Core 对外提供统一事件流, 调用方消费事件并自行决定展示方式.
+- CLI / Server 不直接依赖 provider 原始事件, 只消费 core 标准事件.
+- AgentRuntime 支持 async context manager:
+	- `async with AgentRuntime(...) as runtime: ...`
+	- 退出时自动关闭 providers, SQLite, hooks/tools 相关资源.
+	- 同时保留显式 `await runtime.close()`.
+	- `close()` 必须幂等.
+- API 采用 start 后返回 run handle 的形态:
+	- `run = await runtime.start(message=UserMessage(...), session_id="...", mode="normal")`
+	- `run = await runtime.start(message=UserMessage(...), session_id="...", mode="orchestrator")`
+	- `async for event in run.events(): ...`
+	- `await run.cancel()`
+	- `await run.inspect_child(child_run_id)`
+	- `async for event in run.child_events(child_run_id): ...`
+- `runtime.start(...)` 支持结构化 `UserMessage` 和指定/恢复 `session_id`.
+- `AgentRuntime(project_dir=None, ...)` 中 project_dir 省略时使用当前 cwd.
+- 如果 project_dir 指向文件, runtime 使用其父目录作为 `<project>`.
+- 如果 project_dir 不存在, runtime 启动失败.
+- 用户级 home 默认 `~/.soong-agent`, 可通过 `SOONG_AGENT_HOME` 覆盖.
+- `mode` 按 run 指定, 同一个 `AgentRuntime` 可以同时服务 normal run 和 orchestrator run.
+- `mode="normal"` 启动 main agent.
+- `mode="orchestrator"` 启动 Orchestrator agent; Orchestrator 是该模式的主 agent, 不再拆成两层 agent.
+- 可以提供字符串 prompt 的简写入口, 但内部仍转换为 `UserMessage`.
+- 同一个 session 已有 active run 时, 新 `runtime.start(...)` 返回 status=queued 的 `RunHandle`.
+- queued run 按 session FIFO 顺序执行.
+- queued run 的 `run.events()` 先输出 `run_queued`, 真正开始后输出 `loop_started`.
+- queued run 排队期间不触发 permission callback, 真正执行 tool 前才请求 permission.
+- queued run 被 cancel 时直接标记 cancelled 并从队列移除, 写 run_cancelled / run_dequeued, 不创建模型请求.
+- `run.events()` 第一版是单消费者事件流, 只包含订阅之后的新事件.
+- 每个 child/sub run 可以提供独立 event stream, 供 SDK 调用方 / UI 订阅过程.
+- 多 subscriber / fan-out 由调用方自己处理.
+- 历史事件通过 SQLite replay 查询, 不靠 `run.events()` 回放.
+- run 正常完成时, `sessions.active_node_id` 指向最终 assistant node.
+- run 失败或取消时, `sessions.active_node_id` 指向最后一个已持久化的用户可见 node; partial / failed assistant node 默认不作为 active node.
+- 关键控制接口:
+	- start run / submit user message
+	- cancel current run
+	- inspect child agent
+	- switch context node
+	- delete session
+	- cleanup project tasks
+	- cleanup artifacts
+- `delete_session(session_id)` 遇到 running / queued run 时默认返回 `session_active`; 调用方必须先 cancel 并等待终态.
+- `cleanup_project_tasks(project, dry_run=True, include_failed=False, include_cancelled=False, older_than=None)` 默认 dry-run, 默认只清 completed terminal Task WAL.
+- `cleanup_artifacts(session_id=None, dry_run=True, include_all=False, older_than=None, max_bytes=None)` 默认 dry-run, 默认只清 debug/raw artifacts; 普通 artifacts 需要显式 `include_all=True`.
+- cleanup API 不删除 memory.

@@ -1,0 +1,343 @@
+# Multi Agent
+
+- 采用父子 agent 树.
+- 同一个 session 内, main agent、Orchestrator、sub agent、fork agent 使用同一个 session_id.
+- 不同 agent / run 必须用不同 agent_id / run_id 区分.
+- sub agent 的完整过程必须持久化到同一个 session 的 nodes/events.
+- 父 agent 默认只接收 sub agent 的最终结构化结果, 不接收完整过程.
+- SDK 调用方 / UI 可以订阅 sub agent 的独立 stream 查看过程.
+
+## Sub Agent As Tool
+- 从父 agent / Orchestrator 的模型视角, 子 agent 调用表现为一次 tool call.
+- 普通模式可以使用两种子 agent 创建 tool:
+	- `agent.create_sub_agent`: 普通创建一次性 child agent.
+	- `agent.fork_agent`: fork 当前上下文创建一次性 fork child agent.
+- orchestrator 模式使用 `agent.dispatch_worker` tool 启动已有 worker 的一次 run.
+- 这些 tool 的结果都是标准 tool result, 内容是子 agent 的最终结构化 result.
+- 子 agent 本身仍是完整 agent:
+	- 有自己的 system prompt / instructions.
+	- 有自己的 effective tool set.
+	- 有自己的 run loop.
+	- 有自己的 context 和 event stream.
+- 父 agent / Orchestrator 默认不接收子 agent 完整 transcript, 只接收最终 result summary / artifact summary.
+- 子 agent 完整过程仍持久化到同一个 session, 可通过 child/sub run stream 或 inspect/replay 查看.
+- 第一版不把每一种子 agent 注册成独立工具名, 统一通过 `agent.create_sub_agent` / `agent.fork_agent` / `agent.dispatch_worker` 传入参数选择.
+- 任何子 agent 都不能再创建子 agent; 子 agent 的 effective tool set 不包含 `agent.create_sub_agent` / `agent.fork_agent` / `agent.dispatch_worker`.
+- 同一轮模型输出多个子 agent tool call 时, core 可以并行执行这些 child/sub/worker run.
+- 父/Orchestrator loop 仍必须等待所有并行子 agent tool call 返回最终 result 后才能继续.
+- 并行子 agent tool call 默认 wait_all: 单个子 agent 失败不自动取消其他并行子 agent.
+- 父/Orchestrator 会同时收到成功和失败 result, 并由模型决定重试、改派或取消.
+
+## Agent Roles
+- main agent: 普通模式下的主 agent.
+- Orchestrator: 编排模式下的主 agent; 它同时负责 Task DAG 创建、任务拆解、worker pool 调度、任务下发和结果汇总.
+- sub agent: 执行具体 step 的 worker.
+- fork agent: 用于需要全量/同源上下文的并发分析 agent.
+- orchestrator 是运行 mode, 不是单独的 agent 角色.
+- orchestrator mode 不再拆出两层 agent; 运行时只有一个 Orchestrator agent 作为该模式的主 agent.
+- 能力矩阵:
+		- main agent: 可以使用 `agent.plan_template`, 可以 list_agent_definitions, 可以 create_sub_agent, 可以 fork_agent.
+		- Orchestrator: 可以使用 `agent.plan_template`, 可以 list_agent_definitions, 可以 list_workers, 可以使用 Task 内容创建/修改工具, 可以 dispatch worker run, 不能 fork_agent.
+		- sub agent: 不能使用 `agent.plan_template`, 不能创建 Task DAG, 不能修改 Task 内容, 不能 create_sub_agent, 不能 fork_agent.
+		- fork agent: 不能使用 `agent.plan_template`, 不能创建 Task DAG, 不能修改 Task 内容, 不能 create_sub_agent, 不能 fork_agent.
+
+## Agent Definition Registry
+- 子 agent 类型使用统一 `AgentDefinition` 描述.
+- `AgentDefinition` 来源包括:
+	- SDK 内置 sub agent definitions.
+	- 用户级 agent definition 文件.
+	- SDK 调用方通过代码注册的 agent definition.
+- SDK 内置 definitions 至少包含:
+	- default_sub_agent: 普通 create_sub_agent 默认使用.
+	- default_fork_agent: fork_agent 默认使用.
+	- default_worker_agent: orchestrator worker pool 可引用的通用 worker.
+- SDK 另有内部 `default_compact_agent`:
+	- 只供 runtime 内部 compact fork 使用.
+	- 不出现在 `agent.list_agent_definitions`.
+	- 不能被用户级或代码注册 AgentDefinition 覆盖.
+- default_worker_agent 默认只带最小 worker 工具集合:
+	- Task 读取 / ready step 查询 / claim step / 更新自己 claimed step.
+	- 常规只读文件工具.
+- default_worker_agent 默认不带写文件工具; 写工具必须显式请求并通过权限策略.
+- 所有来源最终注册到同一个 AgentDefinitionRegistry.
+- `agent.create_sub_agent`, `agent.fork_agent`, worker pool 配置都引用 `agent_definition_id`.
+- 文件形式默认位置:
+		- `${SOONG_AGENT_HOME}/agents/*.md`
+- agent definition 文件使用 frontmatter + markdown body:
+	- frontmatter 是 metadata source of truth.
+	- body 是该 agent 的 system instructions.
+	- 必填 metadata: id, name, description.
+	- 可选 metadata: model_profile, suggested_tools, tags, overrides.
+- `agent_definition_id` 来自 definition metadata `id` 或 SDK code 注册参数.
+- core 不为 AgentDefinition 自动生成 id, 也不自动添加 namespace / suffix.
+- core 只校验 `agent_definition_id` 的安全字符、同来源重复、跨来源冲突和显式覆盖关系.
+- AgentDefinition body 进入子 agent 的 system prompt.
+- AgentDefinition body 可以为空.
+- body 为空时, 子 agent 使用 SDK 内置 default sub-agent instructions.
+- AgentDefinition description 只用于 list_agent_definitions / list_workers catalog 和父/Orchestrator 选择提示.
+- AgentDefinition description 不进入子 agent prompt.
+- AgentDefinition body 优先级低于 core builtin system / safety / tool protocol.
+- 父 agent 通过 create_sub_agent / fork_agent / dispatch_worker 传入的 task / instruction / context 作为子 agent 的 user/context block, 不进入 system prompt.
+- 代码注册形式由 SDK 提供, 例如 `runtime.register_agent_definition(...)`.
+- 默认不允许隐式覆盖.
+- 任意来源出现同名 `agent_definition_id` 时, 如果新 definition 没有显式声明 overrides, 启动时报 duplicate_agent_definition.
+- 显式覆盖必须声明被覆盖的来源和 id, 例如 `overrides: builtin:code_reviewer`.
+- overrides 只能覆盖已经存在的 definition; 目标不存在时报 invalid_agent_override.
+- overrides 是整份 AgentDefinition 替换, 不做字段级继承.
+- 覆盖 definition 的 body 为空时, 使用 SDK 内置 default sub-agent instructions, 不继承被覆盖 definition 的 body.
+- 文件来源 definition 不能覆盖 code 注册 definition.
+- user 文件 definition 可以显式覆盖 builtin definition.
+- code 注册 definition 可以显式覆盖任何来源的 definition.
+- 同一来源内 duplicate `agent_definition_id` 永远报错, 不允许 overrides.
+- 有效覆盖关系必须写入 registry inspect/debug 信息, 方便解释最终使用了哪份 definition.
+- `suggested_tools` 是 agent definition 的工具偏好/能力描述, 用于 system prompt、worker 选择和 debug 展示.
+- `suggested_tools` 不是权限边界, 不能扩大当前 mode、role、父级限制或 permission policy 允许的工具.
+- AgentDefinition 加载时必须校验 suggested_tools 中的 canonical tool name 存在.
+- suggested_tools 引用不存在的工具时, 该 AgentDefinition 加载失败并返回 invalid_agent_definition.
+- suggested_tools 引用的工具如果存在但被当前 config / permission policy / mode 禁用, AgentDefinition 仍可加载.
+- `agent.list_agent_definitions` / `agent.list_workers` 可以标记 suggested tool 当前 unavailable, 但这不是 definition 加载错误.
+- suggested tool 的 unavailable_reason 默认只返回简短枚举:
+	- disabled_by_config
+	- permission_denied
+	- mode_restricted
+	- policy_restricted
+- 详细不可用原因只在 debug / inspect 输出中提供.
+- tags 是自由字符串列表, 用于检索、展示和模型选择提示.
+- tags 只做基础类型/长度校验, 不做枚举校验.
+- 未传 agent tool allowed_tools 时, 子 agent 使用其 agent type / mode / default policy 的默认工具集合.
+- AgentDefinition.suggested_tools 不作为默认权限集合.
+- 子 agent 不直接继承父 agent 当前 effective tool set.
+- 真正可调用工具只由 run 启动时计算出的 effective tool set 决定.
+- `model_profile` 是 agent definition 的模型偏好, 不是不可覆盖的硬约束.
+- 子 agent run 默认使用 AgentDefinition.model_profile; runtime/config/SDK 调用方策略可以覆盖.
+- 模型不能通过 create_sub_agent / fork_agent / dispatch_worker 的 tool 参数覆盖 model_profile.
+- 最终模型选择由 run 启动时的 model resolution 决定, 并写入 run metadata/debug 信息.
+
+## list_agent_definitions
+- `agent.list_agent_definitions` 是内置 agent tool.
+- 普通模式 main agent 和 orchestrator mode 的 Orchestrator 可以使用.
+- sub agent / worker sub agent / fork agent 不能使用.
+- `agent.list_agent_definitions` 返回可用于创建子 agent 或配置 worker pool 的 AgentDefinition catalog.
+- 返回字段包括:
+	- agent_definition_id
+	- name
+		- description
+		- source: builtin / user / code
+	- suggested_tools: 每项包含 tool name, available, unavailable_reason 可选
+	- tags
+- `agent.list_agent_definitions` 不返回 worker runtime 状态.
+- worker runtime 状态只能通过 orchestrator 模式的 `agent.list_workers` 查询.
+
+## Worker Pool
+- orchestrator 模式下使用可复用 worker pool.
+- worker pool 由配置引用 AgentDefinition 创建.
+- worker pool 可以引用 SDK 内置 AgentDefinition, 例如 default_worker_agent.
+- orchestrator 模式必须配置至少一个有效 worker pool.
+- 如果没有配置 worker_pools、worker_pools 为空、或全部 worker pool 校验失败, orchestrator 启动失败.
+- 第一版不创建隐式默认 worker pool.
+- 内置 default_worker_agent 只提供可引用的 worker 类型, 不代表 runtime 自动创建 worker.
+- worker pool 配置使用显式 worker 列表; 每个 worker 条目创建一个 worker sub agent.
+- worker pool 不使用 count 字段批量创建 worker.
+- 可以通过写多个 worker 条目来创建多个同类型 worker; 这些条目可以引用同一个 agent_definition_id.
+- 如果 worker 条目显式配置 worker_id, worker_id 必须在同一个 worker pool 内唯一.
+- 如果 worker 条目未配置 worker_id, core 按 pool_id、worker 条目顺序和 agent_definition_id 生成稳定运行时 worker_id.
+- 自动 worker_id 在配置不变时跨进程重启保持稳定.
+- 如果 worker 条目顺序或 agent_definition_id 改变, 自动 worker_id 可能改变.
+- 需要稳定 UI / 日志 / 运维引用的 worker 应显式配置 worker_id.
+- worker 条目可以配置 allowed_tools, 作为该 worker run 的工具上限.
+- dispatch_worker.allowed_tools 如果提供, 只能在 worker 条目 allowed_tools 上继续收窄.
+- 每个 worker sub agent 是某个 AgentDefinition 的运行实例.
+- worker 的 name / description / suggested_tools / tags 来自其 AgentDefinition.
+- worker run 的 effective tool set 由 worker AgentDefinition、worker 条目 allowed_tools、dispatch allowed_tools、mode/role 限制和权限策略共同收敛.
+- worker sub agent 不像普通 create_sub_agent 那样用完即释放.
+- worker sub agent 可以跨多个 step 复用.
+- worker sub agent 可以跨多个 Task 复用.
+- 每次 worker run 的可见 Task scope 由本次 `dispatch_worker.task_id` 限定.
+- worker sub agent 复用稳定 agent_id 和自己的 context tree.
+- 每次 `dispatch_worker` 会在该 worker 的 context tree 上开启一个新的 branch.
+- 本次 dispatch 的 task_id / allowed_step_ids / instruction / context / Task board summary 作为新 branch 的起点上下文.
+- worker run 默认只读取当前 branch active path.
+- sibling branch 默认不进入本次 worker run 上下文, 避免不同 Task 的完整上下文混入.
+- worker 历史可通过 inspect 显式查看, 不自动混入当前 prompt.
+- worker sub agent 每次执行 step 都创建新的 run_id.
+- worker sub agent 的 agent_id 保持稳定.
+- worker pool 不做后台自动 poll.
+- worker 只有在 Orchestrator 通过 `agent.dispatch_worker` 启动 worker run 后才开始查询 ready step.
+- worker pool 不允许模型动态无限扩容; 超过配置上限返回 `child_agent_limit_exceeded`.
+
+## list_workers
+- `agent.list_workers` 是 orchestrator 模式下的内置 agent tool.
+- `agent.list_workers` 只允许 Orchestrator 使用.
+- `agent.list_workers` 返回当前 worker pool 的可选择 worker 列表.
+- 返回字段包括:
+	- worker_agent_id
+	- agent_definition_id
+	- name
+	- description
+	- worker_pool_id
+	- status: idle / busy / unavailable
+	- suggested_tools: 每项包含 tool name, available, unavailable_reason 可选
+	- tags
+	- current_run_id / current_step_id 可选, 仅 busy 时返回
+- Orchestrator 可以像选择 tool 一样, 根据 worker description、tags、suggested_tools 和 status 选择要 dispatch 的 worker.
+- Orchestrator 已收到的 dispatch_worker tool results 可作为后续 worker 选择依据.
+- 第一版不提供独立 worker profile update tool.
+- 第一版 `agent.list_workers` 不返回 recent_results; 需要历史时通过 inspect/replay 显式查询.
+
+## create_sub_agent
+- 普通模式仍支持 `create_sub_agent`.
+- `create_sub_agent` 是普通模式下创建一次性 child agent 的内置 agent tool.
+- 一次性 child agent 默认执行完即可进入 completed / failed / cancelled.
+- `create_sub_agent` 不继承完整父上下文, 只接收显式 context bundle.
+- `create_sub_agent` 不允许传 inline system instructions.
+- 所有 child agent 都必须基于 AgentDefinition; 未指定 agent_definition_id 时使用 default_sub_agent.
+- 父 agent 的动态任务说明只能通过 task / context / constraints 作为 user/context block 传入.
+- 输入使用固定结构化 schema:
+	- agent_definition_id 可选, 缺省使用内置 default_sub_agent
+	- task
+	- context
+	- constraints
+	- allowed_tools 可选, 作为本次 child run 的请求工具子集; 仍必须被 effective tool set 收敛
+	- expected_output_schema
+	- timeout_ms
+- allowed_tools 中包含不存在的 canonical tool name 时, `create_sub_agent` 返回 validation_error, 不启动 child run.
+- allowed_tools 中包含会被 mode / role / permission / 子 agent 黑名单排除的工具时, `create_sub_agent` 返回 validation_error, 不启动 child run.
+- `create_sub_agent` 作为 tool call, 当前 loop 必须等待 child agent run 完成并返回最终结构化 result.
+- child agent run 执行期间可以通过独立 stream 暴露过程.
+- orchestrator worker pool 优先用于编排模式下的 Task DAG step 执行.
+- 普通 create_sub_agent 不直接创建或修改 Task DAG.
+
+## fork_agent
+- 普通模式仍支持 `fork_agent`.
+- `fork_agent` 是普通模式下基于当前上下文创建一次性 fork child agent 的内置 agent tool.
+- 输入可以指定 agent_definition_id; 缺省使用内置 default_fork_agent.
+- 输入可以指定 allowed_tools 请求子集; 仍必须被 effective tool set 收敛.
+- allowed_tools 中包含不存在的 canonical tool name 时, `fork_agent` 返回 validation_error, 不启动 fork run.
+- allowed_tools 中包含会被 mode / role / permission / 子 agent 黑名单排除的工具时, `fork_agent` 返回 validation_error, 不启动 fork run.
+- `fork_agent` 不允许传 inline system instructions.
+- fork child agent 必须基于 AgentDefinition, 不直接复制父 agent 的 system role.
+- fork child agent 继承调用点 active path 上的可见上下文节点集合.
+- core 不复制父 agent 已发送给 provider 的 raw prompt.
+- fork child agent 启动时, prompt composer 会基于继承的 active path 节点重新构造上下文.
+- 重新构造时必须应用 fork child agent 自己的 effective tool set、权限、上下文预算和裁剪规则.
+- sibling branch 默认不进入 fork child agent 上下文.
+- 被父 agent 权限或上下文策略裁掉、但不在 active path 可见节点集合内的内容, 不会因为 fork 自动恢复.
+- fork child agent 执行完即可进入 completed / failed / cancelled.
+- fork child agent 的完整过程持久化到同一个 session.
+- `fork_agent` 不允许在 Orchestrator / sub / worker / fork agent 中使用.
+- runtime 内部的 compact fork 不等同于模型调用 `agent.fork_agent`; 即使当前 agent 不能主动使用 `agent.fork_agent`, core 仍可以为自动 compact / recovery compact 创建只读 fork compact agent.
+- fork child agent 不能再次 create_sub_agent 或 fork_agent.
+- fork child agent 默认不创建或修改 Task DAG.
+- `fork_agent` 作为 tool call, 当前 loop 必须等待 fork child agent run 完成并返回最终结构化 result.
+
+## dispatch_worker
+- `agent.dispatch_worker` 是 orchestrator 模式下的内置 agent tool.
+- `agent.dispatch_worker` 只允许 Orchestrator 使用.
+- `agent.dispatch_worker` 从固定 worker pool 中启动一个 worker sub agent 的新 run.
+- worker sub agent 复用稳定的 agent_id, 但每次 dispatch 都创建新的 run_id.
+- `dispatch_worker` 不允许临时覆盖 worker 的 AgentDefinition body / system instructions.
+- worker 的 system instructions 固定来自 worker pool 引用的 AgentDefinition.
+- Orchestrator 每次派发的 instruction / context 只能作为 worker run 的 user/context block.
+- `agent.dispatch_worker` 不修改 Task DAG 内容, 不把 step 直接分配给 worker, 也不替代 `agent.task_claim_step`.
+- 输入使用固定结构化 schema:
+	- task_id
+	- worker_pool_id 可选, 默认 default worker pool
+	- worker_agent_id 可选, Orchestrator 指定要启动的 worker
+	- allowed_step_ids 可选, 用于限制 worker 本次 run 可查询/claim 的 step 范围
+	- instruction
+	- context
+	- constraints
+	- allowed_tools 可选, 作为本次 worker run 的请求工具子集; 仍必须被 effective tool set 收敛
+	- expected_output_schema
+	- timeout_ms
+- allowed_tools 中包含不存在的 canonical tool name 时, `dispatch_worker` 返回 validation_error, 不启动 worker run.
+- allowed_tools 中包含会被 mode / role / permission / 子 agent 黑名单排除的工具时, `dispatch_worker` 返回 validation_error, 不启动 worker run.
+- `dispatch_worker` 作为 tool call, 当前 Orchestrator loop 必须等待 worker run 完成并返回最终结构化 result.
+- worker run 执行期间可以通过 child_run_id / stream_id 暴露独立过程.
+- dispatch 成功后, worker run 的 start node 位于该 worker context tree 的新 branch.
+- 推荐流程是 Orchestrator 先调用 `agent.list_workers`, 再把选中的 worker_agent_id 传给 `agent.dispatch_worker`.
+- 如果未指定 worker_agent_id, core 可以在 idle worker 中选择一个作为简单 fallback; 第一版不做复杂相关性打分.
+- fallback 选择规则固定为: 在指定 worker_pool_id 内按配置顺序选择第一个 idle 且工具/step scope 校验通过的 worker.
+- core 不根据任务内容、worker description、tags 或历史结果做相关性打分.
+- 需要相关性选择时, Orchestrator 应先调用 `agent.list_workers`, 再显式传入 worker_agent_id.
+- 如果指定 worker_agent_id 但该 worker busy, 返回 `worker_busy`.
+- 如果指定 worker_agent_id 不存在、不属于该 worker_pool 或不可用, 返回 `worker_not_available`.
+- 如果未指定 worker_agent_id 且没有空闲 worker, 返回 `worker_pool_busy`.
+- 如果 task_id 对应 Task 当前是 blocked / completed / failed / cancelled, `dispatch_worker` 返回 `task_not_dispatchable`.
+- Task completed / failed / cancelled 后, 迟到 worker result 仍会写入 worker run transcript, 但 Task step 更新返回 `task_terminal`, 不再写 Task WAL.
+- allowed_step_ids 是硬 scope; worker 本次 run 只能 query / claim 这些 step.
+- allowed_step_ids 可以包含当前尚未 ready 的 step; dispatch 不因此失败.
+- 如果 allowed_step_ids 全部未 ready, worker run 正常返回 no_step_claimed=true.
+- allowed_step_ids 省略表示不按 step id 限制.
+- allowed_step_ids 为空数组时返回 validation_error.
+- allowed_step_ids 中重复 step_id 由 core 去重.
+- 如果指定 allowed_step_ids 但这些 step 不存在或当前 worker 不可见, 返回 validation_error / permission_denied.
+- dispatch 成功后返回 worker_agent_id, child_run_id, stream_id, selection_reason 和最终 result.
+- `dispatch_worker` result 必须包含 step 执行摘要:
+	- claimed_step_id: 可选; worker 未领取 step 时为空.
+	- step_status: 可选; worker 未领取 step 时为空.
+	- step_result_summary: 可选.
+	- no_step_claimed: bool.
+- no_step_claimed=true 是成功 tool result, 不设置 is_error.
+- Orchestrator 收到 no_step_claimed 后决定等待、改派、修改 DAG 或结束 Task.
+- worker 原始 final result 可以作为 `worker_result` 附带返回.
+- Task DAG / WAL 中的 step status、result_summary、artifact_ids 是调度 source of truth.
+- 如果 worker_result 与 Task step 摘要不一致, Orchestrator 判断调度状态时以 Task step 摘要为准.
+- 对 Orchestrator 来说, dispatch_worker 的返回仍是 tool result; worker 的内部过程不直接进入 Orchestrator prompt.
+
+## Task Execution
+- Orchestrator 通过 Task tool 创建内存 Task DAG.
+- Orchestrator 负责维护 DAG、blocked 状态和 worker pool routing.
+- core 根据依赖完成状态自动把可执行 pending step 推进为 ready.
+- Orchestrator 通过 `agent.dispatch_worker` 控制何时启动 worker run.
+- ready queue 是被动可领取集合, 不触发 runtime 自动调度.
+- worker sub agent 启动后, 从自己所属 worker pool 的 ready queue 查询可执行 step.
+- worker sub agent 本次 run 只能查询/claim `dispatch_worker.task_id` 指定 Task 内的 step.
+- worker sub agent 可以读取自己可见的 Task / Step.
+- worker sub agent 通过 `agent.task_claim_step` 原子领取 ready step.
+- 同一个 worker run 最多 claim 一个 step.
+- claim 成功后 step 只进入 claimed; worker 必须显式调用 `agent.task_update_step(status=running)` 才进入 running.
+- 如果 claim 时发现 step 已被其他 worker 领取, worker 应重新查询可执行 step.
+- 如果重新查询后没有可执行 step, worker 返回 `no_step_claimed` 正常结果.
+- 如果 dispatch 输入包含 allowed_step_ids, worker 只能查询/claim 该范围内的 step.
+- step 被 claim 后带 lease; worker 更新 step 非 terminal 状态时自动续租.
+- lease 过期后 core 清空 claim 并把 step 恢复为 pending, 再通过统一 ready 推进逻辑重新进入 ready.
+- worker sub agent 执行 step 后返回结构化结果.
+- worker sub agent 可以标记自己 claimed step 的状态和结果.
+- 如果 worker run 结束、取消或超时时没有把自己 claimed / running step 标记为 terminal 或 blocked, core 自动把该 step 标记为 failed, 并按结束原因写 failed reason.
+- 如果 Orchestrator 对整个 Task 执行 `agent.task_cancel` 或 `agent.task_fail`, core 会取消相关 worker run, 并按 Task 级终止语义把 claimed / running step 写为 cancelled 或 failed.
+- worker sub agent 不能修改 Task 内容或 DAG 拓扑.
+- Orchestrator 汇总 worker result, 决定是否继续 dispatch worker、修改 DAG、完成 Task 或取消 Task.
+
+## Result Contract
+- sub agent 返回给父 agent / Orchestrator 的是结构化结果, 不包含完整过程.
+- sub agent result 包含:
+	- status
+	- summary
+	- findings
+	- artifacts
+	- step_id 可选
+	- proposed_actions
+	- metadata
+- 如果 create_sub_agent 或 step 指定 expected_output_schema, sub agent result 必须先通过该 schema 校验.
+- schema 校验失败时写 child_result_schema_validation_failed event.
+- 父 agent / Orchestrator 不因为单个 sub agent failed 直接 failed.
+
+## Streams
+- 每个 child/sub run 提供独立 event stream.
+- SDK 调用方 / UI 可以订阅某个 child_run_id 的 stream.
+- handoff 模式下, UI 可以直接观察 sub agent 的过程.
+- orchestrator 模式默认只把 sub agent 最终 result 交回 Orchestrator.
+- orchestrator 模式下 UI 仍可通过 child_run_id 订阅 worker 过程.
+- 父 agent prompt 默认不注入 sub agent 完整 transcript.
+- 父 agent prompt 默认只注入 sub agent result summary / artifact summary.
+
+## Cancellation
+- child/sub run 支持 cooperative cancellation.
+- parent / Orchestrator 或 core 可以向 child run 写 cancel request.
+- child run 在下一个安全点停止.
+- 安全点包括模型轮次之间、tool 调用之间、可取消 tool 返回后.
+- 取消请求写 child_agent_cancel_requested event.
+- child 正常响应取消后写 child_agent_cancelled event.
+- 超过 agents.child_cancel_timeout_ms 后写 child_agent_cancel_timeout event.
+- 第一版不强杀正在运行的 tool 或进程.

@@ -1,0 +1,263 @@
+# Config & File Layout
+
+- Soong Agent 只使用 `.soong-agent/` 目录名.
+- 用户级根目录默认是 `~/.soong-agent`.
+- 可以通过环境变量 `SOONG_AGENT_HOME` 覆盖用户级根目录, 主要用于测试隔离.
+- 正常运行未设置 `SOONG_AGENT_HOME` 时固定使用 `~/.soong-agent`.
+- 第一版只有用户级配置:
+	- `~/.soong-agent/config.toml`
+	- 或 `${SOONG_AGENT_HOME}/config.toml`
+- 用户级 `config.toml` 必须存在.
+- `config.toml` 不存在、解析失败或 schema 校验失败时, runtime / CLI 启动失败.
+- 第一版不提供 `soong-agent init`.
+- CLI / runtime 不自动生成默认 `config.toml`; 用户或测试必须提前创建.
+- 不存在项目级 config.
+- 文档不定义 `<project>/.soong-agent/config.toml`; runtime 不读取项目目录下的 config.
+- `<project>` 表示本次运行的工作目录:
+	- CLI 默认当前 cwd.
+	- CLI `--path <path>` 可以指定 cwd.
+	- SDK `AgentRuntime(project_dir=...)` 可以指定 cwd.
+	- 如果 `--path` / `project_dir` 是文件, runtime 使用它的父目录作为 `<project>`.
+	- 如果 `--path` / `project_dir` 不存在, 启动失败.
+	- 启动时必须 resolve symlink, 后续路径边界判断使用 resolved path.
+
+## Config Scope
+
+- 所有会影响运行策略的配置都来自用户级 `config.toml`.
+- 模型、provider、api key env、permission、network、tools、hooks、worker pool 都只能由用户级 config 控制.
+- 项目目录不能通过配置改变默认模型、权限、hooks、MCP、tools 或 write roots.
+- 用户级 config 数组字段使用完整替换语义; 不做数组 merge.
+- config 中的 path 字段支持两个内置占位符:
+	- `${SOONG_AGENT_HOME}`: runtime 解析出的用户级 home.
+	- `<project>`: runtime 解析出的项目工作目录.
+	- 其他环境变量不做隐式展开, 避免配置结果依赖运行进程的任意 env.
+- 环境变量和 secret:
+	- 配置文件只保存环境变量名, 不直接保存 secret.
+	- 例如 `api_key_env = "OPENAI_API_KEY"`.
+	- core 运行时从进程环境读取 secret.
+	- secret 不写入 SQLite, event, artifact, raw debug artifact.
+	- 缺少必要环境变量时采用惰性校验:
+		- SDK 初始化不检查所有可能用到的 env var.
+		- 第一次实际使用对应 provider / tool / hook 时检查.
+		- 缺失时 fail fast, 错误标明 env var 名称、使用方和配置来源.
+
+## Main Config
+
+- 第一版使用 Python 3.11 内置 `tomllib` 读取 TOML.
+- `config.toml` 第一版顶层 sections:
+	- runtime
+	- model
+	- model_overrides
+	- context
+	- compact
+	- memory
+	- agents
+	- plan
+	- task
+	- permissions
+	- hooks
+	- tools
+- `runtime` 配置:
+	- cancel_timeout_ms: 默认 10000.
+	- 控制 `await run.cancel()` 等待 run 进入终态的最长时间.
+	- child agent 取消仍使用 `agents.child_cancel_timeout_ms`.
+- `model` 合并 provider 和 model 配置:
+	- provider
+	- base_url
+	- api_key_env
+	- name
+	- context_window
+	- max_output_tokens
+	- temperature
+	- timeout_ms
+	- retry
+- provider 第一版要求:
+	- `openai`: Chat Completions streaming.
+	- `anthropic`: Anthropic Messages streaming.
+	- `ollama`: Ollama local API.
+	- 公司内部模型网关如果兼容 Chat Completions, 使用 `openai` + `base_url` 配置, 不单独定义内部 provider.
+	- 文档和默认示例只保留通用 `base_url / api_key_env / name`; 不写公司内部默认 endpoint 或模型名.
+- `model_overrides` 是可选 role override:
+	- small
+	- compact
+	- override 继承默认 model, 只覆盖指定字段.
+- Memory Extraction Job 和 Memory Recall Selector 不使用 `model_overrides.memory`; 分别通过 `memory.extract_model_profile` 和 `memory.recall_model_profile` 配置.
+- `model_profile` 字段形态:
+	- 可以是字符串, 引用 `model_overrides.<name>` 中的命名 profile.
+	- 也可以是 inline partial model config.
+	- 解析后都叠加到主 `[model]`.
+- 模型解析顺序:
+	- 先使用主 `[model]`.
+	- 再叠加用途/角色 profile, 例如 `compact.model_profile`, `memory.extract_model_profile`, `memory.recall_model_profile`, `AgentDefinition.model_profile`.
+	- 最后 SDK/runtime policy 可以覆盖.
+	- 模型不能通过 create_sub_agent / fork_agent / dispatch_worker / dispatch task 等 tool 参数覆盖 model.
+- `context` 配置:
+	- session_db_path: 默认 `${SOONG_AGENT_HOME}/sessions.sqlite`.
+	- active_path_only
+	- allow_branch_from: 第一版固定 user_message.
+	- branch_summary: 第一版 false.
+	- reserve_output_tokens
+	- dynamic_system_budget
+	- non_system_budget: 可选, 通常由 context window 减去 system/output 后计算.
+	- task_board_token_budget: 默认 1200.
+	- task_recent_changes_limit: 默认 20.
+	- task_recent_changes_window_minutes: 默认 30.
+- `compact` 配置:
+	- enabled
+	- reserve_tokens
+	- keep_recent_tokens
+	- auto_background
+	- recovery_sync
+	- model_profile: 引用 `model_overrides.compact`, 缺省回退默认 model.
+	- max_summary_tokens
+- `memory` 配置:
+	- enabled
+	- memory_dir: 用户级 memory 目录, 默认 `${SOONG_AGENT_HOME}/memory`.
+	- categories
+	- extract_every_messages: pending root user messages backlog 兜底阈值.
+	- extract_every_tokens: pending root user messages token 估算兜底阈值.
+	- idle_seconds: session 空闲后后台整理 memory 的延迟.
+	- catalog_max_tokens
+	- recall_top_k
+	- memory_context_token_budget
+	- extract_model_profile: Memory Extraction Job 使用的模型配置; 缺省完全回退主模型配置.
+	- recall_model_profile: Memory Recall Selector 使用的模型配置; 缺省完全回退主模型配置.
+	- `extract_model_profile` / `recall_model_profile` 可以像主模型一样指定 provider / base_url / api_key_env / name / context_window / max_output_tokens / temperature / timeout_ms / retry.
+	- Memory Extraction Job 不是 fork/sub/child agent, 不引用 AgentDefinition, 不占用 agents child concurrency.
+	- Memory Writer 只允许写 `${SOONG_AGENT_HOME}/memory/MEMORY.md` 和 `${SOONG_AGENT_HOME}/memory/{user,feedback,reference}/*.md`.
+- `agents` 配置:
+	- max_children_per_run
+	- default_sub_agent_definition: 默认内置 default_sub_agent.
+	- default_fork_agent_definition: 默认内置 default_fork_agent.
+	- worker_pools: orchestrator 模式下的 worker pool 配置.
+		- pool_id.
+		- workers: 显式 worker 列表, 每个条目创建一个 worker.
+		- worker 条目字段:
+			- worker_id 可选; 缺省由 core 生成稳定运行时 id.
+			- agent_definition_id.
+			- allowed_tools 可选; 作为该 worker 的工具上限.
+		- 不支持 count 字段批量创建 worker.
+		- 需要多个同类型 worker 时, 写多个引用同一 agent_definition_id 的 worker 条目.
+		- 显式 worker_id 必须在同一个 pool 内唯一.
+		- 未显式配置 worker_id 时, core 按 pool_id、worker 条目顺序和 agent_definition_id 生成稳定运行时 id.
+		- 配置顺序变化可能改变自动 worker_id; 重要 worker 推荐显式配置 worker_id.
+		- orchestrator 模式要求至少一个有效 worker pool; 不配置或配置为空时启动失败.
+		- 第一版不提供隐式默认 worker pool.
+		- worker 可以引用 SDK 内置 AgentDefinition, 例如 default_worker_agent.
+	- max_concurrent_children_per_session
+	- default_child_timeout_ms
+	- child_cancel_timeout_ms: 默认 30000.
+- `plan` 配置:
+	- default_dir: 默认 `<project>/.soong-agent/plans`.
+	- template_name: 默认内置 plan 模板.
+- `task` 配置:
+	- wal_dir: 默认 `<project>/.soong-agent/tasks`.
+	- task_board_token_budget: 默认 1200.
+	- task_recent_changes_limit: 默认 20.
+	- task_recent_changes_window_minutes: 默认 30.
+	- step_lease_timeout_ms: 默认 300000.
+- `permissions` 配置:
+	- readonly_default: 默认 allow.
+	- write_without_callback: 默认 deny.
+	- remember_scope: 第一版为 session.
+	- allow_for_session_enabled: 默认 true.
+	- network_policy.
+- Permission decision 只有:
+	- allow_once
+	- allow_for_session
+	- deny
+- permission allow/deny 规则不持久化到磁盘.
+- `allow_for_session` 只在当前 session 内存生效, 按 tool name + normalized target scope 记录.
+- `hooks` config:
+	- enabled
+	- default_timeout_ms
+	- 具体 hook 规则在用户级 `${SOONG_AGENT_HOME}/hooks.json`.
+	- 不存在项目级 hooks.
+- `tools` config:
+	- declarative_enabled: 默认 true.
+	- disabled
+	- overrides
+	- allowed_write_roots
+	- allow_tmp_write
+	- default_timeout_ms: 默认 120000.
+	- max_timeout_ms: 默认 600000.
+	- env_allowlist
+	- stdout_limit_bytes
+	- stderr_limit_bytes
+	- network.allowed_hosts
+	- network.allowed_domains
+	- sensitive_paths
+	- mcp.disabled_servers
+	- mcp.disabled_tools
+	- mcp.tool_overrides
+	- mcp.discovery_cache_ttl_ms
+	- tool 实现仍来自 code / MCP / agent tools / `${SOONG_AGENT_HOME}/tools/*.json`.
+
+## User Directory
+
+- 用户级目录:
+	- `${SOONG_AGENT_HOME}/config.toml`
+	- `${SOONG_AGENT_HOME}/hooks.json`
+	- `${SOONG_AGENT_HOME}/mcp.json`
+	- `${SOONG_AGENT_HOME}/tools/*.json`
+	- `${SOONG_AGENT_HOME}/agents/*.md`
+	- `${SOONG_AGENT_HOME}/skills/*.md`
+	- `${SOONG_AGENT_HOME}/CLAUDE.md`
+	- `${SOONG_AGENT_HOME}/AGENTS.md`
+	- `${SOONG_AGENT_HOME}/rules/**/*.md`
+	- `${SOONG_AGENT_HOME}/memory/MEMORY.md`
+	- `${SOONG_AGENT_HOME}/memory/user/*.md`
+	- `${SOONG_AGENT_HOME}/memory/feedback/*.md`
+	- `${SOONG_AGENT_HOME}/memory/reference/*.md`
+	- `${SOONG_AGENT_HOME}/sessions.sqlite`
+	- `${SOONG_AGENT_HOME}/sessions/<session_id>/artifacts/<artifact_id>/<filename>`
+
+## Project Directory
+
+- 项目级目录只保存项目产物和项目 instruction 文件:
+	- `<project>/.soong-agent/plans/<model-chosen-name>.md`
+	- `<project>/.soong-agent/tasks/<session_id>/<model-chosen-task-name>.wal.jsonl`
+	- `<project>/CLAUDE.md`
+	- `<project>/AGENTS.md`
+	- `<project>/<subdir>/CLAUDE.md`
+	- `<project>/<subdir>/AGENTS.md`
+- 项目级目录不包含:
+	- config.toml
+	- hooks.json
+	- tools
+	- agents
+	- skills
+	- memory
+	- rules
+- runtime 按需自动创建 `<project>/.soong-agent/plans` 和 `<project>/.soong-agent/tasks`.
+- 第一版不定义 `<project>/.soong-agent/history`.
+- Plan 是普通项目 Markdown 文件, 不建专门 Plan index source of truth.
+- Task DAG 的 source of truth 是项目级 Task WAL JSONL.
+- Plan 文件名和 Task WAL 文件名都由模型给出候选名, core 只做安全校验和 path_conflict 检查.
+- Memory、skills、AgentDefinition 文件只来自用户级目录和 SDK 内置/代码注册.
+- 第一版只做进程内 cache, 退出后丢弃.
+
+## CLI
+
+- CLI 最小入口:
+	- `soong-agent run [--path <dir-or-file>] [--orchestrator] [--session-id <id>] "message"`
+- `--path` 省略时使用当前 cwd.
+- `--path` 指向目录时, `<project>` 为该目录.
+- `--path` 指向文件时, `<project>` 为该文件父目录; 不自动把文件正文放入上下文.
+- CLI 输出默认是人读文本, 主要用于体验功能.
+- 第一版 CLI 不提供 `--json` event stream 输出.
+- CLI 第一版提供最小 stdin 权限确认:
+	- `1` / `allow once`: allow_once.
+	- `2` / `allow for session`: allow_for_session.
+	- `3` / `deny`: deny.
+	- stdin 不可用或输入无效时默认 deny.
+- 调试信息通过 SQLite、event、artifacts、Task WAL 和项目产物查看.
+
+## Tests
+
+- 测试可以设置 `SOONG_AGENT_HOME=~/.soong-agent/test-runs/<run_id>/home` 隔离用户级数据.
+- 测试 `<project>` 可以放在 `~/.soong-agent/test-runs/<run_id>/project`.
+- 测试结束默认不删除 test-runs, 方便调试.
+- Ollama 测试如果检测到本机 Ollama 未运行, 测试 fixture 自动启动 `ollama serve` 并等待健康检查.
+- 自动启动 Ollama 仅限测试 fixture; 正常 CLI/runtime 不负责启动 Ollama 服务.
+- 测试 fixture 不负责 pull 模型; `gemma4` 必须已经存在.
