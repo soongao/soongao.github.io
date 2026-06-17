@@ -1,3 +1,11 @@
+---
+title: My Agent Core Design - Provider Adapter
+# date: YYYY-MM-DD HH:MM:SS +/-TTTT
+categories: [Agent, Agent Core]
+tags: [Agent, Agent Core]     # TAG names should always be lowercase
+# toc: false
+---
+
 # Provider Adapter
 
 - 采用强抽象: core 内只使用统一协议, OpenAI / Anthropic 等差异全部压到 adapter 层.

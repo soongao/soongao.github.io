@@ -1,3 +1,11 @@
+---
+title: My Agent Core Design - Codegen Plan
+# date: YYYY-MM-DD HH:MM:SS +/-TTTT
+categories: [Agent, Agent Core]
+tags: [Agent, Agent Core]     # TAG names should always be lowercase
+# toc: false
+---
+
 # Codegen Plan
 
 本文档是根据前面各章节生成 `soong-agent` 项目代码的执行计划。目标是让 Codex 或其他代码生成器可以按阶段实现完整项目, 并用测试用例逐步验收。

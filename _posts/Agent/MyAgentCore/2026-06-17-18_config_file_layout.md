@@ -1,3 +1,11 @@
+---
+title: My Agent Core Design - Config
+# date: YYYY-MM-DD HH:MM:SS +/-TTTT
+categories: [Agent, Agent Core]
+tags: [Agent, Agent Core]     # TAG names should always be lowercase
+# toc: false
+---
+
 # Config & File Layout
 
 - Soong Agent 只使用 `.soong-agent/` 目录名.

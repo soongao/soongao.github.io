@@ -1,3 +1,11 @@
+---
+title: My Agent Core Design - Codegen Contract
+# date: YYYY-MM-DD HH:MM:SS +/-TTTT
+categories: [Agent, Agent Core]
+tags: [Agent, Agent Core]     # TAG names should always be lowercase
+# toc: false
+---
+
 # Codegen Contract
 
 本章用于把实现时容易分叉的接口、schema、内置工具和模板资源固定下来。

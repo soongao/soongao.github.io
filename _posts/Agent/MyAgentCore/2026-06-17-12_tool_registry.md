@@ -1,3 +1,11 @@
+---
+title: My Agent Core Design - Tool Registry
+# date: YYYY-MM-DD HH:MM:SS +/-TTTT
+categories: [Agent, Agent Core]
+tags: [Agent, Agent Core]     # TAG names should always be lowercase
+# toc: false
+---
+
 # Tool Registry
 
 - 采用分层工具系统:

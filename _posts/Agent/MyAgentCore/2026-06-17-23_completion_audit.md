@@ -1,3 +1,11 @@
+---
+title: My Agent Core Design - Completion Audit
+# date: YYYY-MM-DD HH:MM:SS +/-TTTT
+categories: [Agent, Agent Core]
+tags: [Agent, Agent Core]     # TAG names should always be lowercase
+# toc: false
+---
+
 # Completion Audit
 
 This file records the current completion evidence for `doc/01` through `doc/22`.

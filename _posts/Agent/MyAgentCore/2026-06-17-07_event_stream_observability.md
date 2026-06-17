@@ -1,3 +1,11 @@
+---
+title: My Agent Core Design - Event Stream & Observability
+# date: YYYY-MM-DD HH:MM:SS +/-TTTT
+categories: [Agent, Agent Core]
+tags: [Agent, Agent Core]     # TAG names should always be lowercase
+# toc: false
+---
+
 # Event Stream & Observability
 
 - 第一版支持 session replay + 结构化 event log.

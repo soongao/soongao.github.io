@@ -1,3 +1,11 @@
+---
+title: My Agent Core Design - Error Handling
+# date: YYYY-MM-DD HH:MM:SS +/-TTTT
+categories: [Agent, Agent Core]
+tags: [Agent, Agent Core]     # TAG names should always be lowercase
+# toc: false
+---
+
 # Error Handling
 
 - Provider 错误可重试, 见 Provider Adapter retry 策略.

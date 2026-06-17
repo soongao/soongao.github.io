@@ -1,3 +1,11 @@
+---
+title: My Agent Core Design - Instructions & Skills
+# date: YYYY-MM-DD HH:MM:SS +/-TTTT
+categories: [Agent, Agent Core]
+tags: [Agent, Agent Core]     # TAG names should always be lowercase
+# toc: false
+---
+
 # Instructions & Skills
 
 - Prompt composer 区分 system prompt 和 non-system prompt.

@@ -1,3 +1,11 @@
+---
+title: My Agent Core Design - Context & Session
+# date: YYYY-MM-DD HH:MM:SS +/-TTTT
+categories: [Agent, Agent Core]
+tags: [Agent, Agent Core]     # TAG names should always be lowercase
+# toc: false
+---
+
 # Context & Session
 
 - Context 采用 Node 模型, 每个 conversation item 是一个树节点.
