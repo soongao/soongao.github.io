@@ -8,6 +8,7 @@ tags: [torch]     # TAG names should always be lowercase
 
 ### 多GPU训练
 #### 1. nn.DataParallel
+
 ```python
 devices = [torch.device(f'cuda:{i}') for i in range(torch.cuda.device_count())]
 net = nn.DataParallel(net, device_ids=devices)
@@ -19,7 +20,9 @@ for epoch in range(num_epochs):
         l.backward()
         trainer.step()
 ```
+
 #### 2. nn.parallel.DistributedDataParallel
+
 ```python
 from torch.nn.parallel import DistributedDataParallel as DDP
 def init_distributed(rank, world_size):

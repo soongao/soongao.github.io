@@ -19,6 +19,7 @@ tags: [Agent, Pi, Context]     # TAG names should always be lowercase
 ### Session Tree
 #### session head
 - JSONL的第一行header, header只提供元信息, 不是tree node
+
 ```ts
 /**
  * JSONL 文件第一行的 header。
@@ -37,7 +38,9 @@ export interface SessionHeader {
 	parentSession?: string;
 }
 ```
+
 #### tree node
+
 ```ts
 /** Tree node for getTree() - defensive copy of session structure */
 export interface SessionTreeNode {
@@ -49,8 +52,10 @@ export interface SessionTreeNode {
 	labelTimestamp?: string;
 }
 ```
+
 #### session entry
 - entry base
+
 ```ts
 export interface SessionEntryBase {
 	type: string;
@@ -59,7 +64,9 @@ export interface SessionEntryBase {
 	timestamp: string;
 }
 ```
+
 - 多种类型, 这些类型在base上进行extension
+
 ```ts
 export type SessionEntry =
     /* 例如
@@ -78,11 +85,13 @@ export type SessionEntry =
 	| LabelEntry
 	| SessionInfoEntry;
 ```
+
 #### compaction
 ##### compaction entry
 - 进行上下文压缩
 - 压缩A->B, 插入一个新的compacttion节点在当前branch中
 - 原本可能是A->B->C->... CompactionEntry要标记未压缩的第一个节点(C), 对应firstKeptEntryId
+
 ```ts
 export interface CompactionEntry<T = unknown> extends SessionEntryBase {
 	type: "compaction";
@@ -100,9 +109,11 @@ export interface CompactionEntry<T = unknown> extends SessionEntryBase {
 	fromHook?: boolean;
 }
 ```
+
 #### branch summary entry
 - 当使用/tree command, 从一个branch切换到另一个, 可以选择主动进行一个summary
 - 可以将原本在的branch的内容进行一个总结, 形成一个summary entry到新branch中
+
 ```ts
 export interface BranchSummaryEntry<T = unknown> extends SessionEntryBase {
 	type: "branch_summary";
@@ -118,8 +129,10 @@ export interface BranchSummaryEntry<T = unknown> extends SessionEntryBase {
 	fromHook?: boolean;
 }
 ```
+
 ### 构建Context
 - leaf沿着当前branch向上扫描, 提取整个path
+
 ```ts
 /* export function buildSessionContext(
 	entries: SessionEntry[],
@@ -138,7 +151,9 @@ while (current) {
     current = current.parentId ? byId.get(current.parentId) : undefined;
 }
 ```
+
 - 构造发送给模型的消息列表
+
 ```ts
 // 真正构造“要发给 LLM 的消息列表”。
 // 关键点：这里不是简单地把 path 上所有 message 原样输出。
@@ -162,14 +177,18 @@ const appendMessage = (entry: SessionEntry) => {
     }
 };
 ```
+
 - 如果没有compact, path全部进入消息列表
+
 ```ts
 // 没有压缩边界时，当前 path 上所有可见消息直接进入上下文。
 for (const entry of path) {
     appendMessage(entry);
 }
 ```
+
 - 如果有compact, 将summary放到第一条, 然后再保留firstKeptEntryId之后的消息
+
 ```ts
 // 压缩后的上下文第一条一定是 summary，
 // 这样模型先拿到历史摘要，再读取保留的尾部上下文。
@@ -188,9 +207,11 @@ for (let i = 0; i < compactionIdx; i++) {
     }
 }
 ```
+
 ### Compaction
 ![compaction message](/assets/img/agent-files/pi/context/compaction_message_overview.png)
 #### Overview
+
 ```ts
 /**
  * 长 session 的上下文压缩（compaction）实现。
@@ -207,7 +228,9 @@ for (let i = 0; i < compactionIdx; i++) {
  *    compaction summary + firstKeptEntryId 之后的保留消息。
  */
 ```
+
 - 访问过得文件信息保留
+
 ```ts
 /**
  * 这里不是“压缩算法本身”的必要字段，而是 Pi 默认实现附带保存的辅助信息：
@@ -218,8 +241,10 @@ export interface CompactionDetails {
 	modifiedFiles: string[];
 }
 ```
+
 - 压缩判断
     - contextTokens > contextWindow - settings.reserveTokens;
+
 ```ts
 /**
  * Check if compaction should trigger based on context usage.
@@ -229,7 +254,9 @@ export function shouldCompact(contextTokens: number, contextWindow: number, sett
 	return contextTokens > contextWindow - settings.reserveTokens;
 }
 ```
+
 - 寻找压缩点(cut point)
+
 ```ts
 /**
  * 在 path entries 中找到“从哪里开始保留尾部”的切点。
@@ -274,7 +301,9 @@ export function findCutPoint(
     // ...
 }
 ```
+
 #### prompt
+
 ```ts
 const SUMMARIZATION_PROMPT = `The messages above are a conversation to summarize. Create a structured context checkpoint summary that another LLM will use to continue the work.
 
@@ -348,7 +377,9 @@ Use this EXACT format:
 
 Keep each section concise. Preserve exact file paths, function names, and error messages.`;
 ```
+
 #### 生成摘要
+
 ```ts
 /**
  * 调用 LLM 为一段历史对话生成结构化摘要。
@@ -392,7 +423,9 @@ export async function generateSummary(
 	streamFn?: StreamFn,
 ): Promise<string> {}
 ```
+
 #### Main compaction function
+
 ```ts
 /**
  * 根据 prepareCompaction() 的结果真正调用模型生成摘要。
@@ -417,8 +450,10 @@ export async function compact(
     // 调用generateSummary
 }
 ```
+
 ### Branch Summary
 #### Overview
+
 ```ts
 /**
  * 树导航（tree navigation）场景下的分支摘要逻辑。
@@ -438,7 +473,9 @@ export async function compact(
  * - branch summarization 解决的是“切换分支后，如何保留离开分支的工作记忆”。
  */
 ```
+
 #### 要总结的范围
+
 ```ts
 /**
  * 收集“从旧位置切到新位置时，应该被总结”的那段 entry。
@@ -458,9 +495,11 @@ export async function compact(
  * @returns Entries to summarize and the common ancestor
  */
 ```
+
 #### Summary Generation
 - prompt
 - summary = BRANCH_SUMMARY_PREAMBLE + generatedSummary(using BRANCH_SUMMARY_PROMPT)
+
 ```ts
 const BRANCH_SUMMARY_PREAMBLE = `The user explored a different conversation branch before returning here.
 Summary of that exploration:`;
@@ -494,7 +533,9 @@ Use this EXACT format:
 
 Keep each section concise. Preserve exact file paths, function names, and error messages.`;
 ```
+
 - generateBranchSummary function
+
 ```ts
 /**
  * 为“被离开的分支”生成 branch summary。

@@ -11,6 +11,7 @@ tags: [object detection, faster rcnn]     # TAG names should always be lowercase
 # https://pytorch.org/tutorials/beginner/colab
 %matplotlib inline
 ```
+
 ## 官方
 - torch 2.4.0+cu121
 - https://pytorch.org/tutorials/intermediate/torchvision_tutorial.html#defining-the-dataset

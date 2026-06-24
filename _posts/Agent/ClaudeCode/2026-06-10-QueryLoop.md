@@ -9,6 +9,7 @@ tags: [Agent, Claude Code, Loop]     # TAG names should always be lowercase
 ## Query Loop
 ### Overview 伪代码调用关系
 - ts语法糖, 异步生成器, 边执行边抛输出
+
 ```ts
 // 第一层 ask：SDK 入口，一次性调用
 async function* ask(params) {
@@ -36,7 +37,9 @@ async function* queryLoop(params) {
     }
 }
 ```
+
 ### queryLoop
+
 ```ts
 async function* queryLoop(params) {
     let state = { messages: [...], turnCount: 1, ... }
@@ -74,6 +77,7 @@ async function* queryLoop(params) {
     }
 }
 ```
+
 - Anthropic response
     - text block 和 tool_use block
     - 和OpenAI response有差别的
@@ -96,6 +100,7 @@ async function* queryLoop(params) {
 
 ### 执行工具
 - 只读工具流式执行
+
 ```ts
 // 模型流式输出时，每识别到一个工具调用就立刻丢到后台开跑
 streamingToolExecutor.addTool(toolBlock, message)
@@ -103,11 +108,13 @@ streamingToolExecutor.addTool(toolBlock, message)
 // 模型流完后，把所有已完成的工具结果一次性收回来
 const toolUpdates = streamingToolExecutor.getRemainingResults()
 ```
+
 - 会改状态的工具串行
     - 工具定义时声明属性(只读还是会改状态), 为指定默认会改状态兜底
 
 ### State
 - 一个loop中跨turn传递
+
 ```ts
 type State = {
   messages: Message[]                    // 累积的对话消息历史
@@ -120,6 +127,7 @@ type State = {
 ### tool_use block
 - 每个tool_use block都必须要有一个tool_result block对应
 - 如果输出了tool_use block但是tool被终止了, 没有tool_result, 会创建一个假的结果(yieldMissingToolResultBlocks)
+
 ```ts
 yield 一条用户角色消息({
   类型: 'tool_result',           // 标明这是个工具结果

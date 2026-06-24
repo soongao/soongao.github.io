@@ -8,6 +8,7 @@ tags: [Go, utils]     # TAG names should always be lowercase
 
 # Go Middlewares Auth
 ## Handle Func
+
 ```go
 func AuthMiddleWare() gin.HandlerFunc {
 	return func(ctx *gin.Context) {

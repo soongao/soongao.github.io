@@ -12,6 +12,7 @@ tags: [mysql]     # TAG names should always be lowercase
 2. 避免SQL注入问题
 
 ## Query
+
 ```go
 // 预处理查询
 func prepareQuery(id int) {
@@ -48,6 +49,7 @@ func prepareQuery(id int) {
 ```
 
 ## Insert
+
 ```go
 // 预处理插入
 func prepareInsert(s Student) {

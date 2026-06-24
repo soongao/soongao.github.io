@@ -9,6 +9,7 @@ tags: [torch]     # TAG names should always be lowercase
 # torch tricks
 
 ### Set Seed
+
 ```python
 import numpy as np
 import torch
@@ -27,6 +28,7 @@ set_seed(seed)
 
 ### Gradient Penalty (gp)
 #### 通常与生成对抗网络(GANs)相关联，特别是在WGAN-GP
+
 ```python
 def gp(model, real_data, fake_data, device, lambda_gp):
     alpha = torch.rand(real_data.size(0), 1, 1, 1).to(device)
@@ -48,6 +50,7 @@ total_loss.backward()
 
 
 ### Automatic Mixed Precision (自动混合精度 AMP)
+
 ```python
 with autocast():
     y_hat = model(X)
@@ -63,15 +66,20 @@ optimizer.zero_grad()
 ### Gradient Clip 梯度剪裁
 #### 一般在loss.backward() 和 optimizer.step() 之间使用
 1. 绝对值裁剪
+
 ```python
 torch.nn.utils.clip_grad_value_(model.parameters(), clip_value=clip_value)
 ```
+
 2. 梯度范数裁剪
+
 ```python
  # norm_type 决定使用L1还是L2范数
 torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=max_norm, norm_type=2)
 ```
+
 3. 自定义梯度裁剪
+
 ```python
 for param in model.parameters():
     if param.grad is not None:
@@ -79,6 +87,7 @@ for param in model.parameters():
 ```
 
 ### Gradient Accumulation (梯度累加)
+
 ```python
 accumulation_steps = 4  # 定义梯度累加的步数
 # 记录批次索引的变量
@@ -101,6 +110,7 @@ for epoch in range(num_epochs):
 
 
 ### scheduler learning rate plot
+
 ```python
 lr_history = []
 for _ in range(steps):
@@ -117,6 +127,7 @@ plt.show()
 
 
 ### save best model and early stop
+
 ```python
 # update log
 if valid_acc > best_acc:

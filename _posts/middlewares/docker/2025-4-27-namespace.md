@@ -15,6 +15,7 @@ tags: [docker]     # TAG names should always be lowercase
 ![namespace](/assets/img/docker/namespace.png)
 
 ### 查看进程所属的namespace
+
 ```text
 # ll /proc/$$/ns
 lrwxrwxrwx    1 root     root             0 Apr 27 12:51 cgroup -> cgroup:[4026531835]
@@ -30,6 +31,7 @@ lrwxrwxrwx    1 root     root             0 Apr 27 12:51 uts -> uts:[4026532256]
 ```
 
 ### go操作namespace
+
 ```go
 // 仅在linux下
 cmd.SysProcAttr = &syscall.SysProcAttr{
@@ -78,6 +80,7 @@ cmd.SysProcAttr = &syscall.SysProcAttr{
   - 这部分代码要在mount proc前, 因为chdir后, 就无法跳出容器文件系统了, 也自然访问不到/proc了
 
 ## 完整流程
+
 ```go
 // 仅展示这部分的核心代码
 // docker run container_name shell_cmd

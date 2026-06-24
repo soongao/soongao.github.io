@@ -8,6 +8,7 @@ tags: [mysql]     # TAG names should always be lowercase
 
 # Go Connect DB
 ## import mysql driver
+
 ```go
 import (
 	"database/sql"
@@ -16,6 +17,7 @@ import (
 ```
 
 ## init db
+
 ```go
 // 定义一个全局对象db
 var db *sql.DB

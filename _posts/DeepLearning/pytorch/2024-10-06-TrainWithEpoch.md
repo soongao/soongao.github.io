@@ -9,6 +9,7 @@ tags: [torch]     # TAG names should always be lowercase
 ## 使用epoch
 
 ### train
+
 ```python
 def train_epoch(model, trainer, loss_fn, dataloader, device):
     """
@@ -29,6 +30,7 @@ def train_epoch(model, trainer, loss_fn, dataloader, device):
 ```
 
 ### val
+
 ```python
 def val_epoch(model, loss_fn, dataloader, device):
     """
@@ -55,6 +57,7 @@ def val_epoch(model, loss_fn, dataloader, device):
 ```
 
 ### val_epoch使用forward_batch(见train with steps)简洁代码
+
 ```python
 def val_epoch(model, trainer, loss_fn, dataloader, device):
     model.eval()
@@ -68,6 +71,7 @@ def val_epoch(model, trainer, loss_fn, dataloader, device):
 ```
 
 ### total
+
 ```python
 def train_and_eval(epoches, model, trainer, loss_fn, 
                     train_dataloader, val_dataloader, device):

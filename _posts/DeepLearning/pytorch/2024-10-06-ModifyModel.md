@@ -16,6 +16,7 @@ tags: [torch]     # TAG names should always be lowercase
 
 #### get any layer`s output
 ##### create_feature_extractor
+
 ```python
 from torchvision.models.feature_extraction import create_feature_extractor
 
@@ -25,6 +26,7 @@ model_ex = create_feature_extractor(model, return_nodes=
 ```
 
 ##### hook
+
 ```python
 def forward_hook(model, X_in, X_out):
     pass
@@ -36,6 +38,7 @@ handle.remove()
 
 #### hook introduce
 ##### register_forward_hook
+
 ```python
 def forward_hook(module, X_input, X_output):
     pass
@@ -44,6 +47,7 @@ handle = layer.register_forward_hook(forward_hook)
 ```
 
 ##### register_backward_hook
+
 ```python
 def backward_hook(module, grad_input, grad_output):
     pass
@@ -52,6 +56,7 @@ handle = layer.register_backward_hook(backward_hook)
 ```
 
 ##### register_param_hook
+
 ```python
 def param_hook(param):
     pass

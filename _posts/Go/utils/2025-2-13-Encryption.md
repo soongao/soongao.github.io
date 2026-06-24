@@ -8,6 +8,7 @@ tags: [Go, utils]     # TAG names should always be lowercase
 
 # Go password encryption
 ## 密码加密
+
 ```go
 import "golang.org/x/crypto/bcrypt"
 
@@ -16,7 +17,9 @@ func HashPassword(pwd string) (string, error) {
 	return string(hash), err
 }
 ```
+
 ## 密码校验
+
 ```go
 func CheckPassword(hash, password string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))

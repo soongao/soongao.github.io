@@ -18,6 +18,7 @@ tags: [Agent, Claude Code, Multi Agent]     # TAG names should always be lowerca
 	- 能停止其他任务的工具
 - 自定义agent多套一层黑名单
 - 后台异步agent走白名单
+
 ```ts
 // src/tools/AgentTool/agentToolUtils.ts:70
 export function filterToolsForAgent({ tools, isBuiltIn, isAsync, permissionMode }): Tools {
@@ -30,11 +31,13 @@ export function filterToolsForAgent({ tools, isBuiltIn, isAsync, permissionMode 
 	})
 }
 ```
+
 ###### context隔离
 - `读文件的缓存` 要复制一份给sub agent
 - `改全局状态` 这件事对sub agent 直接关闭
 - `注册后台任务` sub agent保留这个接口
 - 给每个sub agent发独立 ID、深度代代+1
+
 ```ts
 	// src/utils/forkedAgent.ts:345
 	export function createSubagentContext(parentContext, overrides): ToolUseContext {
@@ -55,10 +58,12 @@ export function filterToolsForAgent({ tools, isBuiltIn, isAsync, permissionMode 
 		}
 	}
 ```
+
 ##### 父子agent通信
 ###### 父 -> 子
 - 消息队列 + 异步通知
 - sub agent 档案
+
 ```ts
 // src/tasks/LocalAgentTask/LocalAgentTask.tsx:116
 export type LocalAgentTaskState = TaskStateBase & {
@@ -76,6 +81,7 @@ export type LocalAgentTaskState = TaskStateBase & {
 ```
 
 - 消息投递
+
 ```ts
 // src/tools/SendMessageTool/SendMessageTool.ts:800
 const task = appState.tasks[agentId]
@@ -98,8 +104,10 @@ export function queuePendingMessage(taskId, msg, setAppState): void {
 	}));
 }
 ```
+
 ##### 子 -> 父
 - 将完成通知拼成XML, 伪装成用户消息, 放进父agent的对话中
+
 ```xml
 <task-notification>
 <task-id>agent-a1b</task-id>
@@ -114,6 +122,7 @@ export function queuePendingMessage(taskId, msg, setAppState): void {
 </usage>
 </task-notification>
 ```
+
 ```ts
 // src/tasks/LocalAgentTask/LocalAgentTask.tsx:197
 const message = `<${TASK_NOTIFICATION_TAG}>
@@ -124,8 +133,10 @@ const message = `<${TASK_NOTIFICATION_TAG}>
 				</${TASK_NOTIFICATION_TAG}>`;
 enqueuePendingNotification({ value: message, mode: 'task-notification' });
 ```
+
 ##### auto-background
 - 父agent同步等待sub agent完成(一个阈值时间内), 超过阈值, sub agent转后台执行
+
 ```ts
 // src/tools/AgentTool/AgentTool.tsx:72
 function getAutoBackgroundMs(): number {
@@ -136,8 +147,10 @@ function getAutoBackgroundMs(): number {
   return 0;
 }
 ```
+
 #### Fork Agent
 - 利用到prompt cache, fork sub agent和父agent的system prompt一致
+
 ```ts
 // src/utils/forkedAgent.ts:57
 export type CacheSafeParams = {
@@ -153,7 +166,9 @@ export type CacheSafeParams = {
 	forkContextMessages: Message[]
 }
 ```
+
 - fork agent的system prompt和父agent一致, 不用自己生成
+
 ```ts
 // src/tools/AgentTool/forkSubagent.ts:60
 export const FORK_AGENT = {
@@ -212,6 +227,7 @@ You are a **coordinator**. Your job is to:
 ```
 
 - coordinator的builtin工具
+
 ```ts
 // src/coordinator/coordinatorMode.ts:29
 const INTERNAL_WORKER_TOOLS = new Set([
@@ -223,11 +239,13 @@ const INTERNAL_WORKER_TOOLS = new Set([
 ```
 
 - 支持并行创建worker, 部分system prompt
+
 ```md
 Parallelism is your superpower. Workers are async. Launch independent workers concurrently whenever possible, don't serialize work that can run simultaneously and look for opportunities to fan out.
 
 并行是你的超能力，worker 全是异步的，能并行的绝不串行，多找机会一口气派一堆出去。
 ```
+
 - 持续派活时, 是resume old agent 还是 spawn new agent
 	- 新任务跟 worker 现有上下文高度相关（比如刚查的文件现在要改），续命老 worker
 	- 新任务跟 worker 现有上下文没关系，或者之前 worker 的工作走偏了，派新 worker

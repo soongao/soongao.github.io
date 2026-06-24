@@ -9,6 +9,7 @@ tags: [torch]     # TAG names should always be lowercase
 ## 使用steps
 
 ### forward
+
 ```python
 def forward_batch(batch, model, loss_fn, device):
 	"""
@@ -27,6 +28,7 @@ def forward_batch(batch, model, loss_fn, device):
 ```
 
 ### total
+
 ```python
 def train_and_eval(total_steps, valid_steps, 
 					model, optimizer, loss_fn, scheduler, 
@@ -61,6 +63,7 @@ def train_and_eval(total_steps, valid_steps,
 
 
 ### val_epoch使用forward_batch简洁代码
+
 ```python
 def val_epoch(model, trainer, loss_fn, dataloader, device):
     model.eval()

@@ -55,6 +55,7 @@ tags: [papers, anomaly]     # TAG names should always be lowercase
 
 ## Code Analysis
 ### DPAM替换origin attention
+
 ```py
 # 替换后DPAM_Layer_num层为DPAM Attention
 def DAPM_replace(self, DPAM_layer_num):
@@ -67,7 +68,9 @@ def DAPM_replace(self, DPAM_layer_num):
             self.attn.proj.bias.data = self.transformer.resblocks[-i].attn.out_proj.bias.clone()
             self.transformer.resblocks[-i].attn = self.attn
 ```
+
 ### DPAM Attention
+
 ```py
 # DPAM Attention forward
 # 先计算原始attention, 然后在将qk改成vv, 再算一个attention, 然后返回两个attention
@@ -96,12 +99,14 @@ def forward(self, x):
     # post code
     return [x, x_ori]
 ```
+
 ### prompt learner
 - 初始化这样两个prompt, 然后tokenize再embedding
   - ['X X X X X X X X X X X X object.']
   - ['X X X X X X X X X X X X damaged object.']
 
 ### text encoder replace embedding
+
 ```py
 # x: text embedding
 prefix = x[:1, :, :]

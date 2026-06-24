@@ -12,6 +12,7 @@ tags: [Agent, Claude Code, Context]     # TAG names should always be lowercase
 ##### 大结果存磁盘
 - 单个工具结果过大, 将完整内容写到磁盘上, 消息里只留下一个很小的摘要
 - 消息级总量控制, 如果一条消息里所有工具结果总大小过大, 将最大的几个存磁盘
+
 ```ts
 async function maybePersistLargeToolResult(
   toolResultBlock: ToolResultBlockParam,
@@ -29,10 +30,12 @@ async function maybePersistLargeToolResult(
 	return { ...toolResultBlock, content: preview }
 }
 ```
+
 ##### Snip (手动截断): 清理不需要的历史
 - 将对话开头最早一批的老消息移除, 并且插入一个标记, 标明之前的消息被清除了
 - 会将snipTokensFreed传给auto-compact层
 	- snip释放了足够的空间, auto-compact就不用触发了
+
 ```ts
 if (feature('HISTORY_SNIP')) {
   const snipResult = snipModule.snipCompactIfNeeded(messagesForQuery)
@@ -43,9 +46,11 @@ if (feature('HISTORY_SNIP')) {
   }
 }
 ```
+
 ##### Micro-Compact: 清理旧的且可重新获取的内容
 - 半旧不新的内容, 可以按时间衰减, 裁剪旧的工具结果
 - 可以重复获取的工具结果可以裁剪
+
 ```ts
 const COMPACTABLE_TOOLS = new Set([
   FILE_READ_TOOL_NAME,    // 读文件 → 可以重新读
@@ -57,8 +62,10 @@ const COMPACTABLE_TOOLS = new Set([
   FILE_WRITE_TOOL_NAME,   // 写文件 → 结果可裁剪
 ])
 ```
+
 - 保留最近N个, 清理其他的
 	- 被裁剪的工具用一个标记替代
+
 ```ts
 // 收集所有可裁剪工具的结果 ID
 const compactableIds = collectCompactableToolIds(messages)
@@ -67,14 +74,17 @@ const keepRecent = Math.max(1, config.keepRecent)  // 至少保留 1 个
 const keepSet = new Set(compactableIds.slice(-keepRecent))
 const clearSet = compactableIds.filter(id => !keepSet.has(id))
 ```
+
 ```ts
 export const TIME_BASED_MC_CLEARED_MESSAGE =
   '[Old tool result content cleared]'
 ```
+
 ##### Context Collapse (读时投影): 调用API时动态压缩上下文
 - 不修改原始消息, 在进入llm前, 动态计算一个压缩的消息给模型
 	- 90% 上下文窗口: 主动开始分段压缩旧消息
 	- 95% 上下文窗口: 紧急压缩更多内容
+
 ```ts
 // 这是 query.ts 中的调用
 // 注意：这是一个"读时投影"——不修改 REPL 的完整历史，
@@ -88,9 +98,11 @@ if (feature('CONTEXT_COLLAPSE') && contextCollapse) {
   messagesForQuery = collapseResult.messages
 }
 ```
+
 ##### Auto-Compact (全量摘要): 全量重写对话, 重新生成新消息链
 - 强制13K缓冲区: 有效窗口 - 13K缓冲区 = 触发阈值
 	- Anthropic跑了数据统计, P99.99的摘要长度不会超过留13K token长度
+
 ```ts
 export const AUTOCOMPACT_BUFFER_TOKENS = 13_000
 
@@ -115,11 +127,13 @@ if (querySource === 'session_memory' || querySource === 'compact') {
   return false
 }
 ```
+
 ###### 压缩后的消息
 ![auto compact msg](/assets/img/agent-files/claudecode/context/auto_compact_msg.webp)
 - 存在Lost in the Middle, 所以全量压缩, 最近的N轮会话也不保留
 	- 最近对话中的关键上下文通过`附件`形式保留
 - 压缩后整个对话历史重写成4段结构
+
 ```ts
 export function buildPostCompactMessages(result: CompactionResult): Message[] {
   return [
@@ -137,6 +151,7 @@ export function buildPostCompactMessages(result: CompactionResult): Message[] {
 - auto-compact之前会再做一次microcompact作为预处理
 - 恢复策略 (附件)
 	- 最多重新加载5个文件; 每个文件最多5k token; 总量不超过50k token
+
 ```ts
 export const POST_COMPACT_MAX_TOKENS_PER_FILE = 5_000
 export const POST_COMPACT_TOKEN_BUDGET = 50_000
@@ -150,6 +165,7 @@ export const POST_COMPACT_MAX_FILES_TO_RESTORE = 5
 - CLAUDE.md
 	- 不被压缩, 清空缓存, 下轮对话通过getUserContext()重新读取
 - 摘要任务prompt
+
 ```md
 CRITICAL: Respond with TEXT ONLY. Do NOT call any tools.
 - Do NOT use Read, Bash, Grep, Glob, Edit, Write, or ANY other tool.
@@ -159,6 +175,7 @@ CRITICAL: Respond with TEXT ONLY. Do NOT call any tools.
 
 - 摘要输出格式
 ![summary prompt](/assets/img/agent-files/claudecode/context/summary_prompt.webp)
+
 ```md
 <analysis>
 [模型的推理草稿，分析对话哪些重要]

@@ -9,6 +9,7 @@ tags: [torch]     # TAG names should always be lowercase
 ## Criterion
 
 #### LabelSmoothedCrossEntropy
+
 ```python
 class LabelSmoothedCrossEntropyCriterion(nn.Module):
     def __init__(self, smoothing, ignore_index=None, reduce=True):
