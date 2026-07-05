@@ -17,7 +17,7 @@ tags: [Agent, Agent Core]     # TAG names should always be lowercase
 	- 或 `${SOONG_AGENT_HOME}/config.toml`
 - 用户级 `config.toml` 必须存在.
 - `config.toml` 不存在、解析失败或 schema 校验失败时, runtime / CLI 启动失败.
-- 第一版不提供 `soong-agent init`.
+- 第一版不提供 `agentcli init`.
 - CLI / runtime 不自动生成默认 `config.toml`; 用户或测试必须提前创建.
 - 不存在项目级 config.
 - 文档不定义 `<project>/.soong-agent/config.toml`; runtime 不读取项目目录下的 config.
@@ -239,16 +239,16 @@ tags: [Agent, Agent Core]     # TAG names should always be lowercase
 	- rules
 - runtime 按需自动创建 `<project>/.soong-agent/plans` 和 `<project>/.soong-agent/tasks`.
 - 第一版不定义 `<project>/.soong-agent/history`.
-- Plan 是普通项目 Markdown 文件, 不建专门 Plan index source of truth.
+- Plan 是普通 Markdown 文件, 不建专门 Plan index source of truth.
 - Task DAG 的 source of truth 是项目级 Task WAL JSONL.
-- Plan 文件名和 Task WAL 文件名都由模型给出候选名, core 只做安全校验和 path_conflict 检查.
+- Plan 文件名和正文由模型生成, 写入通过普通 file write/edit tool 完成. Task WAL 文件名由模型给出候选名, core 在 Task tool 内做安全校验和 path_conflict 检查.
 - Memory、skills、AgentDefinition 文件只来自用户级目录和 SDK 内置/代码注册.
 - 第一版只做进程内 cache, 退出后丢弃.
 
 ## CLI
 
 - CLI 最小入口:
-	- `soong-agent run [--path <dir-or-file>] [--orchestrator] [--session-id <id>] "message"`
+	- `agentcli chat [--path <dir-or-file>] [--orchestrator] [--session-id <id>]`
 - `--path` 省略时使用当前 cwd.
 - `--path` 指向目录时, `<project>` 为该目录.
 - `--path` 指向文件时, `<project>` 为该文件父目录; 不自动把文件正文放入上下文.

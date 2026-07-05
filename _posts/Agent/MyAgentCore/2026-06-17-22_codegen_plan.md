@@ -14,7 +14,7 @@ tags: [Agent, Agent Core]     # TAG names should always be lowercase
 
 - Python distribution name: `soong-agent`.
 - Python import package: `agent_core`.
-- CLI 命令: `soong-agent`.
+- CLI 命令: `agentcli`.
 - 第一版必须完整实现文档中定义的 SDK、runtime、provider、context、tools、permissions、hooks、MCP、plan、task、multi-agent、compact、memory、CLI 和测试约束。
 - 可以分阶段生成代码, 但最终验收必须覆盖全部文档能力, 不划分只实现部分能力的 v1。
 - 测试使用真实但隔离的目录, 并支持本地 Ollama `gemma4` 集成测试。
@@ -220,7 +220,7 @@ soong-agent/
 ### 1. 工程脚手架
 
 - 创建 `pyproject.toml`, 使用 `src/` layout。
-- 配置 `soong-agent = "agent_core.cli:main"` console script。
+- 配置 `agentcli = "agent_cli.cli:main"` console script。
 - 依赖建议:
   - runtime: `pydantic`, `httpx`, `aiosqlite` 或标准 `sqlite3` + executor, `typing-extensions`, `anyio`。
   - test: `pytest`, `pytest-asyncio` 或 `anyio` pytest plugin。
@@ -242,7 +242,7 @@ soong-agent/
   - 其次环境变量。
   - 最后 `~/.soong-agent`。
 - `config.toml` 必须存在, 缺失/解析失败/schema 失败都启动失败。
-- 不实现 `soong-agent init`。
+- 不实现 `agentcli init`。
 - 不读取 `<project>/.soong-agent/config.toml`。
 - `<project>` 默认 cwd, `--path` / `project_dir` 指向文件时使用父目录, 不存在则失败。
 - 路径边界统一 resolve symlink 后判断。
@@ -318,7 +318,7 @@ soong-agent/
 
 ### 9. Plan 与 Task
 
-- `agent.plan_template` 返回 synthetic user/context block, 模型再用普通 write/edit tool 写 `<project>/.soong-agent/plans/<name>.md`。
+- `agent.plan_template` 返回 synthetic user/context block, 模型生成计划正文和文件名后, 再用普通 write/edit tool 写 `<project>/.soong-agent/plans/<name>.md`。
 - `agent.task_template` 返回 Task DAG 写作模板。
 - Task source of truth 是项目级 WAL JSONL。
 - 实现 Task DAG schema、operations、ready 推进、claim、lease、terminal、replay。
@@ -362,7 +362,7 @@ soong-agent/
 ### 13. CLI
 
 - 实现最小 CLI:
-  - `soong-agent run [--path <dir-or-file>] [--orchestrator] [--session-id <id>] "message"`
+  - `agentcli chat [--path <dir-or-file>] [--orchestrator] [--session-id <id>]`
 - CLI 输出人读文本。
 - 不实现 `--json`。
 - 不自动创建 config。
@@ -389,7 +389,7 @@ soong-agent/
 | 用例 | 输入 / 操作 | 预期输出 / 断言 |
 | --- | --- | --- |
 | A1 package import | 在干净环境安装 editable package, 执行 `import agent_core` | import 成功; `AgentRuntime`, `UserMessage`, `RunHandle`, `RuntimeEvent`, `PermissionRequest`, `PermissionDecision`, `ToolDefinition`, `ToolResult`, `AgentDefinition` 可从公开入口导入 |
-| A2 CLI entry | 执行 `soong-agent --help` | 命令存在; help 中包含 `run`, `--path`, `--orchestrator`, `--session-id`; 不包含 `init` 和 `--json` |
+| A2 CLI entry | 执行 `agentcli --help` | 命令存在; help 中包含 `chat`; `agentcli chat --help` 包含 `--path`, `--orchestrator`, `--session-id`; 不包含 `init` 和 `--json` |
 | A3 Pydantic extra forbid | 构造任一公开边界类型并传入未知字段 | 校验失败; 错误类型为 validation error; 未知字段没有被静默丢弃 |
 | A4 error code completeness | 枚举 `ErrorCode` | 包含 `21-codegen-contract.md` 中列出的全部错误码; 没有拼写漂移 |
 
@@ -557,7 +557,7 @@ soong-agent/
 | 用例 | 输入 / 操作 | 预期输出 / 断言 |
 | --- | --- | --- |
 | L1 plan_template | 模型调用 `agent.plan_template(goal="x")` | 返回 synthetic user/context block; node_type 为 `plan_instruction`; 不自动写文件 |
-| L2 plan write | 模型随后调用 `code.write_file` 写 `<project>/.soong-agent/plans/plan.md` | 文件真实写入; 走 write permission; 文件名由模型候选名经 core 安全校验 |
+| L2 plan write | 模型随后调用 `code.write_file` 写 `<project>/.soong-agent/plans/plan.md` | 文件真实写入; 走 write permission; 文件名和内容由模型生成 |
 | L3 plan read ordinary | 模型读取已写 plan markdown | 使用普通 `code.read_file`; 不作为 system instruction 注入 |
 
 ### M. Compact 与 Memory
@@ -589,10 +589,10 @@ soong-agent/
 
 | 用例 | 输入 / 操作 | 预期输出 / 断言 |
 | --- | --- | --- |
-| O1 CLI missing config | `SOONG_AGENT_HOME=<empty> soong-agent run "hi"` | 非 0 退出; 人读错误提示 config missing; 不创建 config |
-| O2 CLI path dir | `soong-agent run --path <project> "hi"` | runtime project 为 `<project>`; 输出 assistant 文本 |
-| O3 CLI path file | `soong-agent run --path <project>/src/a.py "hi"` | project 为 `<project>/src`; 不自动读取 a.py |
-| O4 CLI orchestrator | 带有效 worker_pools 配置执行 `soong-agent run --orchestrator "..."` | 使用 orchestrator mode; 可 dispatch worker |
+| O1 CLI missing config | `SOONG_AGENT_HOME=<empty> agentcli chat --plain` | 非 0 退出; 人读错误提示 config missing; 不创建 config |
+| O2 CLI path dir | `agentcli chat --path <project> --plain` | runtime project 为 `<project>`; 输出 assistant 文本 |
+| O3 CLI path file | `agentcli chat --path <project>/src/a.py --plain` | project 为 `<project>/src`; 不自动读取 a.py |
+| O4 CLI orchestrator | 带有效 worker_pools 配置执行 `agentcli chat --orchestrator --plain` | 使用 orchestrator mode; 可 dispatch worker |
 | O5 CLI permission allow once | CLI 触发写工具, stdin 输入 `1` | 本次写入成功; 后续同 scope 仍提示 |
 | O6 CLI permission allow session | 第一次 stdin 输入 `2`, 后续同 session 同 scope 写入 | 后续不再提示; session 结束后失效 |
 | O7 CLI permission deny | stdin 输入 `3` 或非法输入 | tool denied; write/dangerous 后续 tool calls 停止; CLI 显示可读错误 |
@@ -619,8 +619,8 @@ soong-agent/
 
 - `pytest` 单元测试和集成测试通过。
 - 本机有 Ollama 且 `gemma4` 已 pull 时, Ollama E2E 测试通过。
-- `soong-agent run --path <project> "..."` 可以使用用户级 config 启动并输出人读结果。
-- `soong-agent run --orchestrator ...` 在配置了 worker_pools 时可创建 Task、dispatch worker、写 Task WAL。
+- `agentcli chat --path <project> --plain` 可以使用用户级 config 启动并输出人读结果。
+- `agentcli chat --orchestrator --plain` 在配置了 worker_pools 时可创建 Task、dispatch worker、写 Task WAL。
 - 所有写/edit/run_command 工具都经过 permission callback 或默认 deny。
 - instruction/skill/memory 都使用渐进式披露, 不把所有正文硬塞进初始 system prompt。
 - 测试只写 `~/.soong-agent/test-runs/<run_id>` 和测试 project, 不触碰真实用户数据。

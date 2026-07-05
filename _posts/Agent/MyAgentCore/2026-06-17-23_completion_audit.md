@@ -87,7 +87,7 @@ Wheel smoke test:
 - Imported `agent_core`, `AgentRuntime`, and `UserMessage`.
 - Loaded `template.config.default` from packaged assets and confirmed it uses
   `provider = "ollama"`.
-- Ran `soong-agent --help` from the installed console script.
+- Ran `agentcli --help` from the installed console script.
 
 Result: passed.
 

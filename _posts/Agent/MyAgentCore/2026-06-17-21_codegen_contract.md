@@ -16,7 +16,7 @@ tags: [Agent, Agent Core]     # TAG names should always be lowercase
 
 - Python distribution name 使用 `soong-agent`.
 - SDK import package name 第一版使用 `agent_core`.
-- CLI 命令名使用 `soong-agent`.
+- CLI 命令名使用 `agentcli`.
 - 用户侧主要入口:
 	- `AgentRuntime`
 	- `UserMessage`
@@ -43,7 +43,7 @@ tags: [Agent, Agent Core]     # TAG names should always be lowercase
 	- `config_path` 省略时固定读取 `${SOONG_AGENT_HOME}/config.toml`.
 	- `config_path` 只表示 SDK/测试显式指定的用户级 config 文件路径, 不表示项目级 config 发现机制.
 	- 用户级 `config.toml` 必须存在; 不存在、解析失败、schema 校验失败都使 runtime / CLI 启动失败.
-	- 第一版不提供 `soong-agent init`; CLI / runtime 不自动创建默认 config.
+	- 第一版不提供 `agentcli init`; CLI / runtime 不自动创建默认 config.
 - `<project>` 解析:
 	- `project_dir` 省略时使用当前 cwd.
 	- `project_dir` 指向文件时使用其父目录.
@@ -626,12 +626,12 @@ allowed_domains = []
 CLI 最小入口固定为:
 
 ```text
-soong-agent run [--path <dir-or-file>] [--orchestrator] [--session-id <id>] "message"
+agentcli chat [--path <dir-or-file>] [--orchestrator] [--session-id <id>]
 ```
 
 `--path` 缺省使用当前 cwd; 指向文件时使用父目录作为 `<project>`, 不自动读取该文件正文。
 
-不提供 `soong-agent init`; 缺少 `${SOONG_AGENT_HOME}/config.toml` 时 CLI 启动失败。
+不提供 `agentcli init`; 缺少 `${SOONG_AGENT_HOME}/config.toml` 时 CLI 启动失败。
 
 CLI 第一版权限确认使用 stdin:
 

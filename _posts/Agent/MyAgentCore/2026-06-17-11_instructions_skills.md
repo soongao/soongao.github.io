@@ -31,7 +31,7 @@ tags: [Agent, Agent Core]     # TAG names should always be lowercase
 - Plan instruction:
 	- `agent.plan_template` 读取内置 Plan 写作模板.
 	- `agent.plan_template` 返回 `node_type=plan_instruction` 的 synthetic user/context block.
-	- 模型根据该 block 选择文件名, 再调用普通 write/edit tool 写入 `<project>/.soong-agent/plans/<model-chosen-name>.md`.
+	- 模型根据该 block 生成计划正文并选择文件名, 再调用普通 write/edit tool 写入 `<project>/.soong-agent/plans/<model-chosen-name>.md`.
 	- core 不自动读取 Plan Markdown.
 	- 模型需要计划内容时, 像处理普通文件一样调用内置 read tool 读取该 path.
 - Task instruction:

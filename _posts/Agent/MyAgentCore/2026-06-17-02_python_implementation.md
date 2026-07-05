@@ -12,7 +12,7 @@ tags: [Agent, Agent Core]     # TAG names should always be lowercase
 - 包管理使用 `uv` + `pyproject.toml`.
 - Python distribution name 使用 `soong-agent`.
 - import package name 继续使用 `agent_core`.
-- CLI entry point 使用 `soong-agent`.
+- CLI entry point 使用 `agentcli`.
 - Core 直接使用实用依赖:
 	- `pydantic`
 	- `httpx`
@@ -200,7 +200,7 @@ tags: [Agent, Agent Core]     # TAG names should always be lowercase
 	- 使用 `src/` layout.
 	- 包目录固定为 `src/agent_core/`.
 	- 测试目录使用 `tests/`.
-	- CLI entry point 在 `pyproject.toml` 中声明为 `soong-agent = "agent_core.cli:main"`.
+	- CLI entry point 在 `pyproject.toml` 中声明为 `agentcli = "agent_cli.cli:main"`.
 - SDK 包结构建议:
 	- `src/agent_core/runtime`: loop, run state, event stream.
 	- `src/agent_core/provider`: provider adapter 和统一协议.
