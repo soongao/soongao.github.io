@@ -71,7 +71,7 @@ flowchart LR
     Execenv --> Workdir[workdir: AGENTS.md / .agent_context / resources]
     Execenv --> CodexHome[per-task CODEX_HOME]
 
-    Daemon -->|agent.New("codex")| CodexBackend[codexBackend]
+    Daemon -->|agent.New codex| CodexBackend[codexBackend]
     CodexBackend -->|spawn| CodexCLI[codex app-server --listen stdio://]
     CodexBackend <-->|JSON-RPC over stdin/stdout| CodexCLI
     CodexBackend -->|agent.Message / agent.Result| Daemon

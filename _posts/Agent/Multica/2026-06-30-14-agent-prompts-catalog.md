@@ -27,7 +27,7 @@ flowchart TD
   C --> E[BuildPrompt: 本轮 prompt]
   D --> F[InjectRuntimeConfig: CLAUDE.md / AGENTS.md]
   D --> G[writeContextFiles: .agent_context / skills / project resources]
-  E --> H[provider backend Execute(prompt, ExecOptions)]
+  E --> H["provider backend Execute(prompt, ExecOptions)"]
   F --> H
   G --> H
   H --> I[Claude / Codex / OpenCode / Kimi 等 CLI]
