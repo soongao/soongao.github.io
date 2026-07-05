@@ -7,7 +7,7 @@ mermaid: true
 
 # Codex Prompt 与结果回写节点链路
 
-本文只讲单 Agent 场景：
+本文聚焦单 Agent 场景：
 
 ```text
 用户 -> Multica -> CodeSmith -> Codex
@@ -20,7 +20,7 @@ mermaid: true
 ```text
 用户输入长什么样
 Multica 包装后的 prompt 长什么样
-真正发给 Codex 的 JSON-RPC 长什么样
+发给 Codex 的 JSON-RPC 长什么样
 Codex 返回给 Multica 的事件和结果长什么样
 ```
 
@@ -93,7 +93,7 @@ parent_id = null
 
 ## 3. Node 1：CreateComment 请求
 
-前端或 CLI 调后端创建 comment，请求本质类似：
+前端或 CLI 调后端创建 comment，请求大致如下：
 
 ```json
 {
@@ -195,7 +195,7 @@ task 是派工单。
 
 本地 daemon 持续向 server claim 当前 runtime 可执行的 task。
 
-claim 成功后，daemon 拿到的 task payload 可以理解为：
+claim 成功后，daemon 拿到的 task payload 大致如下：
 
 ```json
 {
@@ -384,7 +384,7 @@ codex app-server --listen stdio://
 }
 ```
 
-真正把包装 prompt 发给 Codex：
+包装后的 prompt 通过这里发给 Codex：
 
 ```json
 {
@@ -724,7 +724,7 @@ multica issue comment add ACME-42 --parent cmt_502 --content-file ./reply.md
 --parent 用于把 Agent 的结果挂到本次触发 comment 下面。
 ```
 
-## 18. 一句话心智模型
+## 18. 整体链路
 
 ```text
 用户输入不是直接给 Codex。

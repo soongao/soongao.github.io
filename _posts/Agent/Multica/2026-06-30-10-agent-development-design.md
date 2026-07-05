@@ -9,20 +9,20 @@ mermaid: true
 
 这篇文档以后端 Agent 开发为主线，解释 Multica 为什么这样设计、关键数据如何流转、扩展一个 Agent 能力时应该改哪些层。前端只在 HTTP/WebSocket 契约或触发入口上出现，不讨论页面、组件、状态库。
 
-核心结论先放前面：
+要点：
 
 - Agent 不是一个 CLI 进程，也不是一段 prompt。它是工作区里的协作身份，同时绑定一个 runtime，并携带执行配置。
 - Runtime 不是 Agent。Runtime 是 daemon 注册出来的“可执行点”：某台机器、某个 provider、某个 owner、当前是否在线。
-- Task 是 Agent 真正开始工作的边界。assign、mention、chat、autopilot、quick-create 最终都会收敛成 `agent_task_queue` 里的 task。
+- Task 是 Agent 开始工作的边界。assign、mention、chat、autopilot、quick-create 最终都会收敛成 `agent_task_queue` 里的 task。
 - Daemon 是执行器。Server 不直接跑代码工具，只负责入队、claim、鉴权、上下文组装、状态机和结果回写。
 - Provider backend 是适配层。Claude、Codex、OpenCode、Cursor 等不同 CLI 被统一成 `agent.Backend.Execute(ctx, prompt, ExecOptions)`。
 - 安全设计的核心是“普通 Agent API 不出密钥，claim 时才把必要配置交给 daemon，daemon 再用 task-scoped token 启动子进程”。
 
 ## 0. 锚点数据
 
-后面统一用这组数据解释，不要被真实代码里的 UUID、`pgtype.UUID`、JSONB、TS 类型包装带偏。它们本质上都是“某个对象的字符串 ID”。
+后面统一用这组数据解释。真实代码里会出现 UUID、`pgtype.UUID`、JSONB、TS 类型包装；这里统一按“某个对象的字符串 ID”理解。
 
-| 名称 | 示例值 | 本质 |
+| 名称 | 示例值 | 含义 |
 | --- | --- | --- |
 | Workspace | `acme-ai` / `ws_7f3a` | 租户边界 |
 | 人类用户 | `chen@example.com` / `usr_chen` | runtime owner、触发者或管理员 |
@@ -32,7 +32,7 @@ mermaid: true
 | Project | `Web App` / `proj_web` | 项目容器，可能携带 repo/local directory 等资源 |
 | Issue | `ACME-42` / `iss_42` | 用户可见工作项 |
 | Comment | `cmt_501` | 一次 @agent 的触发源 |
-| Task | `task_9001` | 一次真正交给 daemon 执行的队列项 |
+| Task | `task_9001` | 一次交给 daemon 执行的队列项 |
 | Task token | `mat_xxx` | claim 时 minted 的一次性 agent 执行凭证 |
 
 一个具体场景：
@@ -119,7 +119,7 @@ flowchart LR
 
 代码里，`agent` 表承载的不是“正在运行的进程”，而是长期配置：
 
-| 字段/配置 | 本质 |
+| 字段/配置 | 含义 |
 | --- | --- |
 | `name`, `description`, `avatar_url` | 协作身份展示 |
 | `workspace_id`, `owner_id`, `visibility` | 租户和权限边界 |
@@ -134,7 +134,7 @@ flowchart LR
 
 把 Agent 当作“配置 + 身份”理解，就能解释很多设计：
 
-- `CodeSmith` 可以在 UI 中像成员一样被分配，但真正执行要等 `rt_mac_01` 在线。
+- `CodeSmith` 可以在 UI 中像成员一样被分配，但执行要等 `rt_mac_01` 在线。
 - `CodeSmith` 的名字和描述能被工作区成员看到，但密钥不会出现在普通 `AgentResponse`。
 - 更新 `instructions` 不会启动进程，只会影响下一次 claim 后 daemon 组装的上下文。
 - `visibility=private` 限制谁能分配它，不是把这个 Agent 从所有列表里隐藏。
@@ -500,7 +500,7 @@ SystemPrompt = 某些 provider 需要 inline runtime brief 时设置
 | Quick-create | `quick_create_prompt != ""` | 把自然语言变成一次 `multica issue create --output json` |
 | Assignment | 默认 | 先 `multica issue get`，再读最近评论并完成 issue |
 
-以 `cmt_501` 的 comment-triggered task 为例，prompt 的本质是：
+以 `cmt_501` 的 comment-triggered task 为例，prompt 大致是：
 
 ```text
 你是 Multica workspace 的本地 coding agent。
@@ -600,7 +600,7 @@ Skills 是给模型看的知识和文件，claim response 里有两种方式：
 - 老 daemon：直接拿 `skills` 完整内容。
 - 新 daemon：拿 `skill_refs`，再调用 bundle resolve 接口下载内容，减小 claim payload。
 
-daemon 在 `ensureTaskSkillBundles` 后把技能写入 provider 能识别的位置，比如 Codex 的 per-task skills 目录、OpenClaw 的 task workspace skills 等。Skills 的本质是“上下文和操作说明”，不是进程级工具服务。
+daemon 在 `ensureTaskSkillBundles` 后把技能写入 provider 能识别的位置，比如 Codex 的 per-task skills 目录、OpenClaw 的 task workspace skills 等。Skills 是“上下文和操作说明”，不是进程级工具服务。
 
 DB 里 `skill.content` 是主 `SKILL.md` 内容，`skill_file` 是支持文件的相对路径和内容。执行时 daemon 才把这些内容物化成 provider 目录里的文件；这不是只保存文件路径，也不是靠 symlink 直接挂过去。遇到用户已有同名 skill 目录时，daemon 会写到 collision-free sibling，例如 `issue-review-multica`，避免覆盖用户文件。
 
@@ -642,7 +642,7 @@ ANTHROPIC_API_KEY=...
 
 ## 11. 状态机和结果回写：成功必须显式完成
 
-task 的核心状态可以理解为：
+task 的核心状态如下：
 
 ```mermaid
 stateDiagram-v2
@@ -673,7 +673,7 @@ stateDiagram-v2
 - complete 上报遇到 transient server 错误时，不会转成 failed，因为那会丢掉 agent 已经成功的事实；它宁愿保留 running 等待后续恢复。
 - fail 时也会带 `session_id/work_dir`，方便下一次 chat 或 follow-up 能 resume，不因为失败丢上下文。
 
-`TaskResult` 的本质不是 provider 原样输出，而是 daemon 归一后的终态：
+`TaskResult` 不是 provider 原样输出，而是 daemon 归一后的终态：
 
 ```text
 Status: completed / failed / aborted / timeout / cancelled
@@ -791,7 +791,7 @@ execution_policy = "fast_feedback"
    - 新 server 给老 daemon 的 payload 不应破坏执行。
    - 字段是否要广播到 WebSocket，要考虑脱敏和 actor 权限。
 
-这条链路背后的原则是：Agent 配置项只有真正进入 claim/daemon/provider，才会影响执行。只改 `AgentResponse` 通常只影响 UI 展示，不影响 Agent 干活。
+这条链路背后的原则是：Agent 配置项只有进入 claim/daemon/provider，才会影响执行。只改 `AgentResponse` 通常只影响 UI 展示，不影响 Agent 执行。
 
 ## 15. 排障时按这条链路查
 
@@ -839,9 +839,9 @@ execution_policy = "fast_feedback"
    - `CompleteTask/FailTask` 是否成功。
    - issue/comment/chat/autopilot 是否收到终态副作用和 WebSocket 事件。
 
-## 16. 一句话心智模型
+## 16. 整体链路
 
-可以把 Multica 的 Agent 系统记成这条链：
+Multica 的 Agent 系统可以按这条链路理解：
 
 ```text
 Agent 是谁

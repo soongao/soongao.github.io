@@ -8,9 +8,9 @@ tags: [Agent, Agent Core]     # TAG names should always be lowercase
 
 # Codegen Contract
 
-本章用于把实现时容易分叉的接口、schema、内置工具和模板资源固定下来。
+本章固定实现时容易分叉的接口、schema、内置工具和模板资源。
 
-其他章节描述产品语义和行为, 本章描述第一版生成代码时必须落地的最小稳定契约。实现可以在内部增加字段或 helper, 但对外 API、持久化字段、tool canonical name 和错误码不能随意漂移。
+其他章节描述产品语义和行为；本章定义第一版代码生成必须落地的稳定契约。实现可以在内部增加字段或 helper, 但对外 API、持久化字段、tool canonical name 和错误码需要保持稳定。
 
 ## Public SDK Shape
 

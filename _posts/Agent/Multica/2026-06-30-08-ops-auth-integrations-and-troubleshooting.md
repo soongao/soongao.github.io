@@ -82,7 +82,7 @@ Google OAuth：
   -> server 签发 JWT cookie
 ```
 
-自部署如果不配邮件 provider，验证码不会真正发送，只会出现在 backend stdout。这对本地开发方便，对生产是静默黑洞。
+自部署如果不配邮件 provider，验证码不会发送，只会出现在 backend stdout。这对本地开发方便，对生产会变成无提示的失败。
 
 ### CLI 登录
 
@@ -212,7 +212,7 @@ WebSocket 连不上常见原因：
 | 反向代理后 WS 失败 | 没转发 Upgrade header | 配置 `proxy_set_header Upgrade` 等 |
 | 登录一段时间后断 | cookie 过期 | 重新登录 |
 
-Self-host 生产最关键的是 `FRONTEND_ORIGIN`。它同时影响 CORS、邀请链接、WebSocket origin。
+Self-host 生产需要优先确认 `FRONTEND_ORIGIN`。它同时影响 CORS、邀请链接、WebSocket origin。
 
 ## Daemon 排障
 

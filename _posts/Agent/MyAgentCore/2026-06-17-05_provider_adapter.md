@@ -109,7 +109,7 @@ tags: [Agent, Agent Core]     # TAG names should always be lowercase
 - Tool call streaming:
 	- `tool_call_delta` 只用于 UI 展示和 debug.
 	- adapter 内部负责聚合 provider tool argument delta.
-	- core 真正执行 tool 前只读取 `model_completed.tool_calls`.
+	- core 实际执行 tool 前只读取 `model_completed.tool_calls`.
 	- `model_completed.tool_calls` 必须是完整结构化 `ToolCall` 列表, arguments 已经是 dict.
 - `ToolCall` 使用精简稳定模型:
 	- tool_call_id.

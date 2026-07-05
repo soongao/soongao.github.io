@@ -7,7 +7,7 @@ mermaid: true
 
 # Squad Child Issue 生命周期
 
-这篇文档只拆一条主线：
+本文拆一条主线：
 
 ```text
 用户创建 squad 父 issue
@@ -18,11 +18,11 @@ mermaid: true
 -> 唤醒 leader 汇总并推进下一 stage
 ```
 
-这里不讨论普通单 agent comment，也不展开前端交互。目标是把 squad 模式下“任务如何被拆开、执行、记录、再推进”说清楚。
+这里不讨论普通单 agent comment，也不展开前端交互，只说明 squad 模式下任务如何被拆开、执行、记录、再推进。
 
-## 先给结论
+## 要点
 
-- `squad` 本身不是 provider agent，真正执行的是 squad 的 `leader_id`。
+- `squad` 本身不是 provider agent，执行入口是 squad 的 `leader_id`。
 - `leader` 主要靠 prompt / squad protocol 被约束为协调者：优先拆解、委派、汇总，不直接实现，除非没有可用 teammate。
 - 大任务拆解出来的 child issue 是真实 `issue` 记录，通过 `parent_issue_id` 归到父 issue 下。
 - `stage` 是 child issue 上的字段，不是单独的对象。它用于把 child issue 分成有顺序的阶段。
@@ -131,7 +131,7 @@ agent_task_queue:
   status = queued
 ```
 
-这一步的本质是：
+这一步做的是：
 
 ```text
 squad 是组织结构；
@@ -193,7 +193,7 @@ issue:
     C2b: review 边界场景
 ```
 
-但代码/DB 本质是：
+但代码/DB 里的结构是：
 
 ```text
 C1.parent_issue_id = P, C1.stage = 1
@@ -507,7 +507,7 @@ Prompt / protocol 约束：
 
 **这是 DAG 吗？**
 
-不是完整 DAG 引擎。更准确是：
+不是完整 DAG 引擎，更接近：
 
 ```text
 issue tree + stage barrier + leader 通过 CLI 动态调整

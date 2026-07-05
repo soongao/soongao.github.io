@@ -7,7 +7,7 @@ mermaid: true
 
 # Agent Workdir 与 Git Worktree 协作模型
 
-这篇文档只解释一件事：
+本文只解释一件事：
 
 ```text
 多个 agent 修改同一个项目时，代码文件到底放在哪里、分支怎么来、用户最后看什么。
@@ -23,7 +23,7 @@ mermaid: true
 | commit / push / PR | 把本地改动提交到远端、发起 review | agent 自己执行 Git/GitHub 命令 |
 | issue comment | 用户在 Multica 里看到的结果说明 | agent 通过 `multica issue comment add` 写回 |
 
-一句话版本：
+简化说：
 
 ```text
 Multica 给每个 agent task 一个隔离 workdir；
@@ -37,7 +37,7 @@ agent 改完后自己 commit/push/PR；
 
 ```text
 本地 workdir / Git worktree 不是最终交付物。
-真正可持久交付的东西通常是远端 branch、PR、issue comment、metadata。
+可持久交付的东西通常是远端 branch、PR、issue comment、metadata。
 ```
 
 ## 总流程图

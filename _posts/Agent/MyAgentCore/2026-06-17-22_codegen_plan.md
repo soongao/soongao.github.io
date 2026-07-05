@@ -8,15 +8,15 @@ tags: [Agent, Agent Core]     # TAG names should always be lowercase
 
 # Codegen Plan
 
-本文档是根据前面各章节生成 `soong-agent` 项目代码的执行计划。目标是让 Codex 或其他代码生成器可以按阶段实现完整项目, 并用测试用例逐步验收。
+本文档定义 `soong-agent` 的代码生成执行计划。Codex 或其他代码生成器按阶段实现项目, 并用测试用例逐步验收。
 
 ## 目标
 
 - Python distribution name: `soong-agent`.
 - Python import package: `agent_core`.
 - CLI 命令: `agentcli`.
-- 第一版必须完整实现文档中定义的 SDK、runtime、provider、context、tools、permissions、hooks、MCP、plan、task、multi-agent、compact、memory、CLI 和测试约束。
-- 可以分阶段生成代码, 但最终验收必须覆盖全部文档能力, 不划分只实现部分能力的 v1。
+- 第一版必须覆盖文档中定义的 SDK、runtime、provider、context、tools、permissions、hooks、MCP、plan、task、multi-agent、compact、memory、CLI 和测试约束。
+- 可以分阶段生成代码, 但最终验收要覆盖全部文档能力, 不划分只实现部分能力的 v1。
 - 测试使用真实但隔离的目录, 并支持本地 Ollama `gemma4` 集成测试。
 
 ## 代码生成输入
@@ -36,7 +36,7 @@ tags: [Agent, Agent Core]     # TAG names should always be lowercase
 
 ## 项目代码结构
 
-建议生成以下目录结构。实现时可以增加内部 helper, 但不要改变公开 import path、CLI entry point、内置 tool canonical name 和持久化 schema 的语义。
+建议使用以下目录结构。实现时可以增加内部 helper, 但不要改变公开 import path、CLI entry point、内置 tool canonical name 和持久化 schema 的语义。
 
 ```text
 soong-agent/

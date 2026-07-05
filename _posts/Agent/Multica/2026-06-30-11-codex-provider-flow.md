@@ -7,9 +7,9 @@ mermaid: true
 
 # Codex Provider 流程细节拆解
 
-这篇文档只拆 Codex 这一条 provider 链路。重点不是“Codex 怎么写代码”，而是 Multica 后端和 daemon 如何把一个 Agent task 转成一次 `codex app-server` 执行，再把 Codex 的 thread、turn、消息、usage 和结果收回到 Multica 的 task 状态机里。
+这篇文档只拆 Codex 这一条 provider 链路。重点放在 Multica 后端和 daemon 如何把一个 Agent task 转成一次 `codex app-server` 执行，再把 Codex 的 thread、turn、消息、usage 和结果收回到 Multica 的 task 状态机里。
 
-先明确一句话：
+先明确一个边界：
 
 ```text
 Codex 不是一种 daemon。
@@ -20,7 +20,7 @@ Multica daemon 只有一套执行框架；当 runtime.provider == "codex" 时，
 
 继续用前面文档里的例子：
 
-| 名称 | 示例值 | 本质 |
+| 名称 | 示例值 | 含义 |
 | --- | --- | --- |
 | Workspace | `acme-ai` / `ws_7f3a` | 租户边界 |
 | 用户 | `chen@example.com` / `usr_chen` | daemon/runtime owner |
@@ -121,7 +121,7 @@ runtime.status = online
 这台机器有一个 Codex 可执行点，可以被 Agent 绑定。
 ```
 
-Agent `CodeSmith` 绑定这个 runtime 后，配置可以理解为：
+Agent `CodeSmith` 绑定这个 runtime 后，对应配置如下：
 
 ```text
 agent.id = agt_codesmith
@@ -334,7 +334,7 @@ Codex 使用 `AGENTS.md` 作为工作流/上下文入口。daemon 会在 `workdi
 
 ## 6. Codex 的 per-task config.toml 管理
 
-`codex-home/config.toml` 是 Codex 集成里最关键的文件之一。daemon 和 backend 会往里面写多个 Multica-managed block。
+`codex-home/config.toml` 是 Codex 集成里的主要文件之一。daemon 和 backend 会往里面写多个 Multica-managed block。
 
 ### 6.1 Sandbox block
 
@@ -588,7 +588,7 @@ thread/name/set
 
 ### 9.3 turn/start
 
-真正把任务发给 Codex 的是：
+发给 Codex 的请求是：
 
 ```text
 turn/start
@@ -632,7 +632,7 @@ turn/start
 最后回复 cmt_501。
 ```
 
-但 Codex 拿到的完整上下文不只来自 prompt，还来自：
+但 Codex 拿到的上下文不只来自 prompt，还来自：
 
 ```text
 workdir/AGENTS.md
@@ -754,7 +754,7 @@ codex app-server no progress timeout after 30s
 
 区别可以这样理解：
 
-| 类型 | 谁判断 | 本质 |
+| 类型 | 谁判断 | 含义 |
 | --- | --- | --- |
 | semantic inactivity | Codex backend | Codex 有事件，但长时间没有有意义进展 |
 | first-turn no-progress | Codex backend | turn/start 后第一回合卡住 |
@@ -980,9 +980,9 @@ runtime_id 是否一致
 Codex thread/resume 是否失败并 fallback fresh
 ```
 
-## 19. 一句话心智模型
+## 19. 整体链路
 
-Codex 这条链可以记成：
+Codex provider 可以按这条链路排查：
 
 ```text
 runtime.provider=codex

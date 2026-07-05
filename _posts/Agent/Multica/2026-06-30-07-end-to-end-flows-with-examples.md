@@ -6,7 +6,7 @@ tags: [Agent, Multica]
 
 # 端到端流程与锚点例子
 
-本文用一组固定的真实世界锚点数据串起 Multica 的核心流转。理解时不要被 UUID、`pgtype.UUID`、TS branded type 等细节带偏：它们本质上都是字符串标识符。真正重要的是对象关系和状态变化。
+本文用一组固定的锚点数据串起 Multica 的核心流转。阅读时不用纠结 UUID、`pgtype.UUID`、TS branded type 这些包装形式；这里关注对象关系和状态变化。
 
 ## 本文锚点数据
 
@@ -15,7 +15,7 @@ tags: [Agent, Multica]
 | 名称 | 值 | 含义 |
 | --- | --- | --- |
 | 用户 | `chen@example.com` | 人类成员陈同学 |
-| 用户 ID | `usr_chen` | 本质是用户字符串 ID |
+| 用户 ID | `usr_chen` | 用户字符串 ID |
 | 工作区 | `acme-ai` | workspace slug |
 | 工作区 ID | `ws_7f3a` | workspace UUID 的简化写法 |
 | Issue 前缀 | `ACME` | issue key 前缀 |
@@ -120,7 +120,7 @@ agent.visibility = workspace
 
 ### 关键理解
 
-agent 不持有代码仓库，不直接执行任务。它只是"谁来做、用什么 provider、带什么指令/skill/env"的配置。真正执行仍然落到它绑定的 runtime。
+agent 不持有代码仓库，不直接执行任务。它只是"谁来做、用什么 provider、带什么指令/skill/env"的配置。执行仍然落到它绑定的 runtime。
 
 ## 2. 创建项目并挂 GitHub 仓库
 
@@ -296,7 +296,7 @@ Instructions:
 Use multica CLI to inspect issue and comments when needed.
 ```
 
-这不是逐字源码生成结果，而是本质。真实 prompt 会由 daemon 根据 provider、task 类型、project resource、skill 等拼装。
+这不是逐字源码生成结果，只保留结构。真实 prompt 会由 daemon 根据 provider、task 类型、project resource、skill 等拼装。
 
 ### 代码流
 
@@ -644,7 +644,7 @@ Instructions: 登录、表单、toast 问题优先派给 CodeSmith。
 
 ### 关键理解
 
-squad 是路由层。真正执行的人仍然是某个 agent 或 member。
+squad 是路由层。执行者仍然是某个 agent 或 member。
 
 ## 12. Skill 注入
 
@@ -771,7 +771,7 @@ UI create/update issue
   -> WebSocket 更新 UI/inbox/activity/chat
 ```
 
-后续无论你追分配、@、chat、autopilot、squad，本质上都在问两个问题：
+后续无论追分配、@、chat、autopilot 还是 squad，都可以先问两个问题：
 
 1. 这次触发如何创建或定位一个 `agent_task_queue` 行？
 2. daemon claim 后如何把这行 task 转成 provider CLI 的一次本地执行？
