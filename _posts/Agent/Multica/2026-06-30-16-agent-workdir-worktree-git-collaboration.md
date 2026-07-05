@@ -2,6 +2,7 @@
 title: "16-agent-workdir-worktree-git-collaboration"
 categories: [Agent, Multica]
 tags: [Agent, Multica]
+mermaid: true
 ---
 
 # Agent Workdir 与 Git Worktree 协作模型

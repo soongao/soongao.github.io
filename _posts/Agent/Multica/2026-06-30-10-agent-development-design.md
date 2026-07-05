@@ -2,6 +2,7 @@
 title: "10-agent-development-design"
 categories: [Agent, Multica]
 tags: [Agent, Multica]
+mermaid: true
 ---
 
 # Agent 开发核心设计拆解

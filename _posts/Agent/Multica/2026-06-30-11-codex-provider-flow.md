@@ -2,6 +2,7 @@
 title: "11-codex-provider-flow"
 categories: [Agent, Multica]
 tags: [Agent, Multica]
+mermaid: true
 ---
 
 # Codex Provider 流程细节拆解

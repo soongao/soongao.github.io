@@ -2,6 +2,7 @@
 title: "13-codex-json-node-graph"
 categories: [Agent, Multica]
 tags: [Agent, Multica]
+mermaid: true
 ---
 
 ```mermaid

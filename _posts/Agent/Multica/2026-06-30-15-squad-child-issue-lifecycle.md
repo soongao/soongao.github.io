@@ -2,6 +2,7 @@
 title: "15-squad-child-issue-lifecycle"
 categories: [Agent, Multica]
 tags: [Agent, Multica]
+mermaid: true
 ---
 
 # Squad Child Issue 生命周期

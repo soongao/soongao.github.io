@@ -2,6 +2,7 @@
 title: "12-codex-prompt-result-node-flow"
 categories: [Agent, Multica]
 tags: [Agent, Multica]
+mermaid: true
 ---
 
 # Codex Prompt 与结果回写节点链路

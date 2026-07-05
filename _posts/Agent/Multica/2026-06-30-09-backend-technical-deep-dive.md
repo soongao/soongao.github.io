@@ -2,6 +2,7 @@
 title: "09-backend-technical-deep-dive"
 categories: [Agent, Multica]
 tags: [Agent, Multica]
+mermaid: true
 ---
 
 # 后端技术详细拆解

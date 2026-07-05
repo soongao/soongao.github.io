@@ -2,6 +2,7 @@
 title: "14-agent-prompts-catalog"
 categories: [Agent, Multica]
 tags: [Agent, Multica]
+mermaid: true
 ---
 
 # Agent Prompt 与运行指令分类目录
