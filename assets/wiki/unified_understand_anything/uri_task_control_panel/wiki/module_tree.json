@@ -1,0 +1,98 @@
+{
+  "project": "uri_task_control_panel",
+  "generatedBy": "codex-from-gitnexus-index",
+  "generatedAt": "2026-07-15T11:11:00.312Z",
+  "modules": [
+    {
+      "name": "internal",
+      "count": 24,
+      "files": [
+        "internal/api/handlers_test.go",
+        "internal/api/handlers.go",
+        "internal/api/response.go",
+        "internal/barrier/barrier_test.go",
+        "internal/barrier/barrier.go",
+        "internal/collector/collector_test.go",
+        "internal/collector/collector.go",
+        "internal/config/config.go",
+        "internal/finalizer/finalizer_test.go",
+        "internal/finalizer/finalizer.go",
+        "internal/job/file_scanner_test.go",
+        "internal/job/file_scanner.go",
+        "internal/job/manager_test.go",
+        "internal/job/manager.go",
+        "internal/scheduler/lambda_launcher_test.go",
+        "internal/scheduler/lambda_launcher.go",
+        "internal/scheduler/scheduler.go",
+        "internal/store/keys.go",
+        "internal/store/store_test.go",
+        "internal/store/store.go",
+        "internal/types/dto.go",
+        "internal/types/states.go",
+        "internal/writerrpc/client_test.go",
+        "internal/writerrpc/client.go"
+      ]
+    },
+    {
+      "name": ".",
+      "count": 4,
+      "files": [
+        "build.sh",
+        "go.mod",
+        "go.sum",
+        "README.md"
+      ]
+    },
+    {
+      "name": ".ua",
+      "count": 2,
+      "files": [
+        ".ua/.understandignore",
+        ".ua/config.json"
+      ]
+    },
+    {
+      "name": "conf",
+      "count": 2,
+      "files": [
+        "conf/base.yml",
+        "conf/hertz.config.yaml"
+      ]
+    },
+    {
+      "name": "api",
+      "count": 1,
+      "files": [
+        "api/swagger.yaml"
+      ]
+    },
+    {
+      "name": "cmd",
+      "count": 1,
+      "files": [
+        "cmd/main.go"
+      ]
+    },
+    {
+      "name": "docs",
+      "count": 1,
+      "files": [
+        "docs/integration.md"
+      ]
+    },
+    {
+      "name": "examples",
+      "count": 1,
+      "files": [
+        "examples/hertz_client/main.go"
+      ]
+    },
+    {
+      "name": "script",
+      "count": 1,
+      "files": [
+        "script/bootstrap.sh"
+      ]
+    }
+  ]
+}

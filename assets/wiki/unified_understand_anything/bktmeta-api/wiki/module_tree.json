@@ -1,0 +1,319 @@
+{
+  "project": "bktmeta-api",
+  "generatedBy": "codex-from-gitnexus-index",
+  "generatedAt": "2026-07-15T11:11:00.178Z",
+  "modules": [
+    {
+      "name": "conf",
+      "count": 55,
+      "files": [
+        "conf/-.prod.yml",
+        "conf/alisg.prod.yml",
+        "conf/base.yml",
+        "conf/boe.prod.yml",
+        "conf/boe.staging.default_tob_bp.yml",
+        "conf/boe.staging.default_tob.yml",
+        "conf/boe.staging.yml",
+        "conf/boe.test.yml",
+        "conf/boe.ut.yml",
+        "conf/boei18n.prod.yml",
+        "conf/boei18n.staging.yml",
+        "conf/boei18n.test.yml",
+        "conf/boettp.yml",
+        "conf/gl.prod.yml",
+        "conf/gl2.prod.yml",
+        "conf/hj.prod.yml",
+        "conf/hl.prod.default_tob_imagex.yml",
+        "conf/hl.prod.default_tob.yml",
+        "conf/hl.prod.yml",
+        "conf/ie.prod.yml",
+        "conf/jj.prod.yml",
+        "conf/jpsaas.prod.yml",
+        "conf/lf.prod.default_tob_imagex.yml",
+        "conf/lf.prod.default_tob.yml",
+        "conf/lf.prod.yml",
+        "conf/lf.staging.yml",
+        "conf/lq.prod.default_tob_imagex.yml",
+        "conf/lq.prod.default_tob.yml",
+        "conf/lq.prod.yml",
+        "conf/maliva.prod.yml",
+        "conf/my.prod.yml",
+        "conf/my2.prod.yml",
+        "conf/my3.prod.yml",
+        "conf/mya.prod.default_tob_bp.yml",
+        "conf/mya.prod.default_tob_imagex.yml",
+        "conf/mya.prod.default_tob.yml",
+        "conf/mya.prod.yml",
+        "conf/myb.prod.default_tob_bp.yml",
+        "conf/myb.prod.default_tob_imagex.yml",
+        "conf/myb.prod.yml",
+        "conf/no1a.prod.yml",
+        "conf/sg1.prod.yml",
+        "conf/sgcomm1.prod.yml",
+        "conf/sinfonline.yml",
+        "conf/sinfonlinea.yml",
+        "conf/sinfonlinec.yml",
+        "conf/test.staging.yml",
+        "conf/toutiao_videoarch_bktmetaapi.yaml",
+        "conf/useast2a.prod.yml",
+        "conf/useast2b.prod.yml",
+        "conf/useast5.prod.yml",
+        "conf/useast8.prod.yml",
+        "conf/xh.prod.yml",
+        "conf/zb.prod.yml",
+        "conf/zjg.prod.yml"
+      ]
+    },
+    {
+      "name": "service",
+      "count": 30,
+      "files": [
+        "service/async_task_test.go",
+        "service/async_task.go",
+        "service/base_test.go",
+        "service/bpm_handler_test.go",
+        "service/bpm_handler.go",
+        "service/bucket_doc_api_test.go",
+        "service/bucket_doc_api.go",
+        "service/bucket_encryption_handler_test.go",
+        "service/bucket_encryption_handler.go",
+        "service/bucket_handler_test.go",
+        "service/bucket_handler.go",
+        "service/bucket_simple_handler.go",
+        "service/idc_proxy_handler_test.go",
+        "service/idc_proxy_handler.go",
+        "service/keygenerator_test.go",
+        "service/keygenerator.go",
+        "service/response_test.go",
+        "service/response.go",
+        "service/script_test.go",
+        "service/script.go",
+        "service/signature_test.go",
+        "service/signature.go",
+        "service/tos_handler_test.go",
+        "service/tos_handler.go",
+        "service/tos_s3_bucket_handler_test.go",
+        "service/tos_s3_bucket_handler.go",
+        "service/volcengine_handler_test.go",
+        "service/volcengine_handler.go",
+        "service/vsre_test.go",
+        "service/vsre.go"
+      ]
+    },
+    {
+      "name": "db",
+      "count": 28,
+      "files": [
+        "db/base_test.go",
+        "db/bucket_doc_test.go",
+        "db/bucket_doc.go",
+        "db/bucket_idc_config_test.go",
+        "db/bucket_idc_config.go",
+        "db/bucket_test.go",
+        "db/bucket.go",
+        "db/db_test.go",
+        "db/db.go",
+        "db/db.sql",
+        "db/db.sql",
+        "db/db.sql",
+        "db/db.sql",
+        "db/db.sql",
+        "db/db.sql",
+        "db/db.sql",
+        "db/idc_proxy_test.go",
+        "db/idc_proxy.go",
+        "db/temp_bucket_test.go",
+        "db/temp_bucket.go",
+        "db/tosapi_test.go",
+        "db/tosapi.go",
+        "db/types.go",
+        "db/upsert_local_region_buckets_test.go",
+        "db/utils_test.go",
+        "db/utils.go",
+        "db/volc_test.go",
+        "db/volc.go"
+      ]
+    },
+    {
+      "name": "util",
+      "count": 19,
+      "files": [
+        "util/aes_test.go",
+        "util/aes.go",
+        "util/base_test.go",
+        "util/cache_test.go",
+        "util/cache.go",
+        "util/context.go",
+        "util/distributed_limiter_test.go",
+        "util/distributed_limiter.go",
+        "util/interface_limiter_test.go",
+        "util/interface_limiter.go",
+        "util/key_lock_test.go",
+        "util/key_lock.go",
+        "util/limiter_test.go",
+        "util/limiter.go",
+        "util/md5.go",
+        "util/metrics_test.go",
+        "util/metrics.go",
+        "util/once_test.go",
+        "util/once.go"
+      ]
+    },
+    {
+      "name": "rpc",
+      "count": 8,
+      "files": [
+        "rpc/base_test.go",
+        "rpc/bpm_test.go",
+        "rpc/bpm.go",
+        "rpc/f_client_test.go",
+        "rpc/fake_client.go",
+        "rpc/tos_idl.go",
+        "rpc/tos_test.go",
+        "rpc/tos.go"
+      ]
+    },
+    {
+      "name": ".",
+      "count": 7,
+      "files": [
+        "build.sh",
+        "go.mod",
+        "go.sum",
+        "main_test.go",
+        "main.go",
+        "README.md",
+        "test.sh"
+      ]
+    },
+    {
+      "name": "tcc",
+      "count": 6,
+      "files": [
+        "tcc/base_test.go",
+        "tcc/keys.go",
+        "tcc/tcc_client_test.go",
+        "tcc/tcc_client.go",
+        "tcc/tcc_config_test.go",
+        "tcc/tcc_config.go"
+      ]
+    },
+    {
+      "name": "config",
+      "count": 5,
+      "files": [
+        "config/base_test.go",
+        "config/config.go",
+        "config/mysql_test.go",
+        "config/mysql.go",
+        "config/tcc_merge_test.go"
+      ]
+    },
+    {
+      "name": "middleware",
+      "count": 5,
+      "files": [
+        "middleware/agw_test.go",
+        "middleware/agw.go",
+        "middleware/base_test.go",
+        "middleware/base.go",
+        "middleware/zti_middleware.go"
+      ]
+    },
+    {
+      "name": ".codebase",
+      "count": 3,
+      "files": [
+        ".codebase/apps.yaml",
+        ".codebase/pipelines/ci.yaml",
+        ".codebase/pipelines/log_analysis.yaml"
+      ]
+    },
+    {
+      "name": "errno",
+      "count": 3,
+      "files": [
+        "errno/error.go",
+        "errno/response_test.go",
+        "errno/response.go"
+      ]
+    },
+    {
+      "name": "janus",
+      "count": 3,
+      "files": [
+        "janus/base_test.go",
+        "janus/response_test.go",
+        "janus/response.go"
+      ]
+    },
+    {
+      "name": "jwt",
+      "count": 3,
+      "files": [
+        "jwt/base_test.go",
+        "jwt/jwt_test.go",
+        "jwt/jwt.go"
+      ]
+    },
+    {
+      "name": "kms",
+      "count": 3,
+      "files": [
+        "kms/base_test.go",
+        "kms/client_test.go",
+        "kms/client.go"
+      ]
+    },
+    {
+      "name": "mem_limit",
+      "count": 3,
+      "files": [
+        "mem_limit/base_test.go",
+        "mem_limit/memlimit_test.go",
+        "mem_limit/memlimit.go"
+      ]
+    },
+    {
+      "name": "remote_cache",
+      "count": 3,
+      "files": [
+        "remote_cache/base_test.go",
+        "remote_cache/remote_cache_test.go",
+        "remote_cache/remote_cache.go"
+      ]
+    },
+    {
+      "name": "script",
+      "count": 3,
+      "files": [
+        "script/bootstrap.sh",
+        "script/pre_nginx.sh",
+        "script/settings.py"
+      ]
+    },
+    {
+      "name": ".ua",
+      "count": 2,
+      "files": [
+        ".ua/.understandignore",
+        ".ua/config.json"
+      ]
+    },
+    {
+      "name": "dto",
+      "count": 2,
+      "files": [
+        "dto/page.go",
+        "dto/tempBucket.go"
+      ]
+    },
+    {
+      "name": "constant",
+      "count": 1,
+      "files": [
+        "constant/constant.go"
+      ]
+    }
+  ]
+}

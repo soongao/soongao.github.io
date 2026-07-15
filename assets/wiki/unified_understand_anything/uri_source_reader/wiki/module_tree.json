@@ -1,0 +1,97 @@
+{
+  "project": "uri_source_reader",
+  "generatedBy": "codex-from-gitnexus-index",
+  "generatedAt": "2026-07-15T11:11:00.302Z",
+  "modules": [
+    {
+      "name": "internal",
+      "count": 27,
+      "files": [
+        "internal/bucketing/bucketing_test.go",
+        "internal/bucketing/bucketing.go",
+        "internal/source/hdfsparquet/bucketer.go",
+        "internal/source/hdfsparquet/extra_query_client_test.go",
+        "internal/source/hdfsparquet/extra_query_client.go",
+        "internal/source/hdfsparquet/extractor_test.go",
+        "internal/source/hdfsparquet/extractor.go",
+        "internal/source/hdfsparquet/hdfs_integration_test.go",
+        "internal/source/hdfsparquet/iterator_test.go",
+        "internal/source/hdfsparquet/iterator.go",
+        "internal/source/hdfsparquet/parser.go",
+        "internal/source/hdfsparquet/path_compat.go",
+        "internal/source/hdfsparquet/reader_helpers_test.go",
+        "internal/source/hdfsparquet/reader_progress_test.go",
+        "internal/source/hdfsparquet/reader.go",
+        "internal/source/hdfsparquet/scanner.go",
+        "internal/source/hdfsparquet/storagegw.go",
+        "internal/source/hdfsparquet/testdata/oABGAFmIb82G5FeeAXQKfeImLUI2FAtktStlAI.m3u8",
+        "internal/source/hdfsparquet/types.go",
+        "internal/source/hdfsparquet/uri.go",
+        "internal/source/hdfsparquet/wrapper.go",
+        "internal/source/manifest/manifest.go",
+        "internal/source/sourcecommon/sink_stage_test.go",
+        "internal/source/sourcecommon/sink_stage.go",
+        "internal/source/tosinventorycsv/reader_benchmark_test.go",
+        "internal/source/tosinventorycsv/reader_test.go",
+        "internal/source/tosinventorycsv/reader.go"
+      ]
+    },
+    {
+      "name": ".",
+      "count": 13,
+      "files": [
+        ".env",
+        ".env",
+        ".env",
+        "build.sh",
+        "go.mod",
+        "go.sum",
+        "main_test.go",
+        "main.go",
+        "Makefile",
+        "Makefile",
+        "Makefile",
+        "Makefile",
+        "Makefile"
+      ]
+    },
+    {
+      "name": "sink",
+      "count": 6,
+      "files": [
+        "sink/local_test.go",
+        "sink/local.go",
+        "sink/types.go",
+        "sink/writer_rpc_benchmark_test.go",
+        "sink/writer_rpc_test.go",
+        "sink/writer_rpc.go"
+      ]
+    },
+    {
+      "name": "controlplane",
+      "count": 5,
+      "files": [
+        "controlplane/client.go",
+        "controlplane/reporter_test.go",
+        "controlplane/reporter.go",
+        "controlplane/tracker.go",
+        "controlplane/types.go"
+      ]
+    },
+    {
+      "name": ".ua",
+      "count": 2,
+      "files": [
+        ".ua/.understandignore",
+        ".ua/config.json"
+      ]
+    },
+    {
+      "name": "diagnostics",
+      "count": 1,
+      "files": [
+        "diagnostics/writer_rpc_diagnosis.html"
+      ]
+    }
+  ]
+}

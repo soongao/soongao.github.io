@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>harden Wiki</title>
+  <style>
+    body{margin:0;font-family:"Avenir Next","PingFang SC",sans-serif;background:#f6f7f2;color:#151713;line-height:1.55}
+    main{max-width:960px;margin:0 auto;padding:32px 18px}
+    h1{font-size:32px;margin:0 0 8px}
+    .meta{color:#62685f;margin-bottom:24px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+    a{display:block;background:#fff;border:1px solid #d7ddd0;border-radius:8px;padding:14px 16px;color:#151713;text-decoration:none;font-weight:800}
+    a:hover{border-color:#151713;box-shadow:4px 4px 0 #151713}
+    .stats{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}
+    .pill{background:#e3efe9;border-radius:999px;padding:5px 10px;font-weight:800}
+  </style>
+</head>
+<body>
+<main>
+  <h1>harden Wiki</h1>
+  <div class="meta">中文静态 Wiki，基于 GitNexus 索引与 knowledge graph 生成。</div>
+  <div class="stats">
+    <span class="pill">422 nodes</span>
+    <span class="pill">562 edges</span>
+    <span class="pill">3 layers</span>
+    <span class="pill">4 tour steps</span>
+  </div>
+  <section class="grid">
+    <a href="overview.md">项目总览</a>
+    <a href="architecture.md">架构层级</a>
+    <a href="modules.md">关键模块</a>
+    <a href="flows.md">关键流程</a>
+    <a href="dependencies.md">依赖关系</a>
+    <a href="files.md">文件索引</a>
+    <a href="symbols.md">符号索引</a>
+  </section>
+</main>
+</body>
+</html>

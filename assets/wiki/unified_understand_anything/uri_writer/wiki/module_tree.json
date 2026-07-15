@@ -1,0 +1,126 @@
+{
+  "project": "uri_writer",
+  "generatedBy": "codex-from-gitnexus-index",
+  "generatedAt": "2026-07-15T11:11:00.324Z",
+  "modules": [
+    {
+      "name": ".",
+      "count": 15,
+      "files": [
+        ".env",
+        ".env",
+        ".env",
+        "build.sh",
+        "debug-cpu-spike-analysis.md",
+        "go.mod",
+        "go.sum",
+        "main_test.go",
+        "main.go",
+        "Makefile",
+        "Makefile",
+        "Makefile",
+        "Makefile",
+        "Makefile",
+        "README.md"
+      ]
+    },
+    {
+      "name": "writer",
+      "count": 15,
+      "files": [
+        "writer/bucket_ctx_test.go",
+        "writer/bucket_ctx.go",
+        "writer/cpu_backpressure.go",
+        "writer/errors.go",
+        "writer/final_sink.go",
+        "writer/handlers_cpu_backpressure_test.go",
+        "writer/handlers_rpc_integration_test.go",
+        "writer/handlers.go",
+        "writer/local_hdfs_memory_integration_test.go",
+        "writer/max_concurrent_merges_test.go",
+        "writer/pool.go",
+        "writer/spill_control_test.go",
+        "writer/waiting_server_integration_test.go",
+        "writer/writer_start_test.go",
+        "writer/writer.go"
+      ]
+    },
+    {
+      "name": "kitex_gen",
+      "count": 9,
+      "files": [
+        "kitex_gen/base/base.go",
+        "kitex_gen/base/k-base.go",
+        "kitex_gen/base/k-consts.go",
+        "kitex_gen/uri_writer/k-consts.go",
+        "kitex_gen/uri_writer/k-uri_writer.go",
+        "kitex_gen/uri_writer/uri_writer.go",
+        "kitex_gen/uri_writer/writerservice/client.go",
+        "kitex_gen/uri_writer/writerservice/server.go",
+        "kitex_gen/uri_writer/writerservice/writerservice.go"
+      ]
+    },
+    {
+      "name": "service",
+      "count": 3,
+      "files": [
+        "service/doc.go",
+        "service/impl.go",
+        "service/server.go"
+      ]
+    },
+    {
+      "name": ".ua",
+      "count": 2,
+      "files": [
+        ".ua/.understandignore",
+        ".ua/config.json"
+      ]
+    },
+    {
+      "name": "config",
+      "count": 2,
+      "files": [
+        "config/config_test.go",
+        "config/config.go"
+      ]
+    },
+    {
+      "name": "idl",
+      "count": 2,
+      "files": [
+        "idl/base.thrift",
+        "idl/uri_writer.thrift"
+      ]
+    },
+    {
+      "name": "router",
+      "count": 2,
+      "files": [
+        "router/registrar_test.go",
+        "router/registrar.go"
+      ]
+    },
+    {
+      "name": "cmd",
+      "count": 1,
+      "files": [
+        "cmd/writer_server/main.go"
+      ]
+    },
+    {
+      "name": "controlplane",
+      "count": 1,
+      "files": [
+        "controlplane/client.go"
+      ]
+    },
+    {
+      "name": "lifecycle",
+      "count": 1,
+      "files": [
+        "lifecycle/lifecycle.go"
+      ]
+    }
+  ]
+}

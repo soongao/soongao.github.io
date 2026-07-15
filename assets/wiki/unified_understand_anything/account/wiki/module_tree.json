@@ -1,0 +1,470 @@
+[
+  {
+    "name": "Application Runtime",
+    "slug": "application-runtime",
+    "files": [
+      "main.go"
+    ]
+  },
+  {
+    "name": "Configuration and TCC Settings",
+    "slug": "configuration-and-tcc-settings",
+    "files": [
+      "src/config/config.go",
+      "src/config/validator.go",
+      "src/tcc/acl.go",
+      "src/tcc/async_update.go",
+      "src/tcc/circuit_breaker.go",
+      "src/tcc/config.go",
+      "src/tcc/id_gen.go",
+      "src/tcc/is_admin.go",
+      "src/tcc/setting_account_nocache_whitelist.go",
+      "src/tcc/setting_allowlist.go",
+      "src/tcc/setting_check_storage_config_whitelist.go",
+      "src/tcc/setting_localcache.go",
+      "src/tcc/setting_metadata_blacklist.go",
+      "src/tcc/setting_redis_cache.go",
+      "src/tcc/setting_remote.go",
+      "src/tcc/tcc_client.go"
+    ]
+  },
+  {
+    "name": "API Controllers and Middleware",
+    "slug": "api-controllers-and-middleware",
+    "files": [
+      "src/controllers/account.go",
+      "src/middleware/access.go",
+      "src/middleware/acl.go",
+      "src/middleware/circuit_breaker.go",
+      "src/middleware/filter.go",
+      "src/middleware/janus_access.go",
+      "src/middleware/logging.go",
+      "src/middleware/rate_limiter.go",
+      "src/middleware/wand_access.go"
+    ]
+  },
+  {
+    "name": "Domain Services",
+    "slug": "domain-services",
+    "files": [
+      "src/service/access.go",
+      "src/service/account.go",
+      "src/service/account_category_schema.go",
+      "src/service/authority.go",
+      "src/service/bpm.go",
+      "src/service/cache.go",
+      "src/service/condition.go",
+      "src/service/config.go",
+      "src/service/domain.go",
+      "src/service/domain_auth.go",
+      "src/service/id_gen.go",
+      "src/service/instance.go",
+      "src/service/refresh_cache.go",
+      "src/service/rule.go",
+      "src/service/rule_v2.go",
+      "src/service/task.go",
+      "src/service/wand.go"
+    ]
+  },
+  {
+    "name": "Data Access Layer",
+    "slug": "data-access-layer",
+    "files": [
+      "src/dao/access.go",
+      "src/dao/account.go",
+      "src/dao/authority.go",
+      "src/dao/category_schema.go",
+      "src/dao/condition.go",
+      "src/dao/db.go",
+      "src/dao/domain.go",
+      "src/dao/domain_auth.go",
+      "src/dao/instance.go",
+      "src/dao/sync_config.go",
+      "src/dao/task.go",
+      "src/dao/video_account.go",
+      "src/dao/video_config.go",
+      "src/dao/video_rule.go",
+      "src/dao/video_rule_v2.go"
+    ]
+  },
+  {
+    "name": "Data Models and DTOs",
+    "slug": "data-models-and-dtos",
+    "files": [
+      "src/dto/access.go",
+      "src/dto/authority.go",
+      "src/dto/base.go",
+      "src/dto/category_schema.go",
+      "src/dto/condition.go",
+      "src/dto/domain.go",
+      "src/dto/domain_auth.go",
+      "src/dto/model.go",
+      "src/dto/task.go",
+      "src/dto/video_account.go",
+      "src/dto/video_rule.go"
+    ]
+  },
+  {
+    "name": "Remote Integrations",
+    "slug": "remote-integrations",
+    "files": [
+      "src/remote/http_utils.go",
+      "src/rpc/base.go",
+      "src/rpc/bucket.go",
+      "src/rpc/decc.go"
+    ]
+  },
+  {
+    "name": "Caching Layer",
+    "slug": "caching-layer",
+    "files": [
+      "src/remote_cache/cache.go",
+      "src/remote_cache/cdn_domain.go",
+      "src/remote_cache/domain_rel.go",
+      "src/remote_cache/nop_cache.go",
+      "src/remote_cache/video_account.go"
+    ]
+  },
+  {
+    "name": "Async Messaging",
+    "slug": "async-messaging",
+    "files": [
+      "src/rocketmq/consumer/handler.go"
+    ]
+  },
+  {
+    "name": "Validation and Error Handling",
+    "slug": "validation-and-error-handling",
+    "files": [
+      "src/errno/code.go",
+      "src/validator/validator.go"
+    ]
+  },
+  {
+    "name": "Rate and Resource Limits",
+    "slug": "rate-and-resource-limits",
+    "files": [
+      "src/interface_limiter/interface_limiter.go",
+      "src/mem_limit/memlimit.go",
+      "src/mem_limit/setlimit_debug.go",
+      "src/mem_limit/setlimit_stub.go"
+    ]
+  },
+  {
+    "name": "Shared Utilities",
+    "slug": "shared-utilities",
+    "files": [
+      "src/constant/const.go",
+      "src/util/common.go",
+      "src/util/id_gen_util.go",
+      "src/util/metrics.go",
+      "src/util/rate_limit.go",
+      "src/util/region.go",
+      "src/util/tools.go"
+    ]
+  },
+  {
+    "name": "Other",
+    "slug": "other",
+    "files": [],
+    "children": [
+      {
+        "name": "Other — README.md",
+        "slug": "other-readme-md",
+        "files": [
+          "README.md"
+        ]
+      },
+      {
+        "name": "Other — build.sh",
+        "slug": "other-build-sh",
+        "files": [
+          "build.sh"
+        ]
+      },
+      {
+        "name": "Other — conf",
+        "slug": "other-conf",
+        "files": [
+          "conf/alisg.prod.yml",
+          "conf/base.yml",
+          "conf/boe.staging.default_tob_bp.yml",
+          "conf/boe.staging.yml",
+          "conf/boe.test.default_tob.yml",
+          "conf/boe.test.yml",
+          "conf/boe.ut.yml",
+          "conf/boei18n.staging.yml",
+          "conf/boettp.yml",
+          "conf/gl2.prod.yml",
+          "conf/hj.prod.yml",
+          "conf/hl.prod.default_tob.yml",
+          "conf/hl.prod.default_tob_imagex.yml",
+          "conf/hl.prod.yml",
+          "conf/ie.prod.yml",
+          "conf/jj.prod.yml",
+          "conf/jpsaas.prod.yml",
+          "conf/ka4private1lark.prod.yml",
+          "conf/kitex_remote_config.json",
+          "conf/lf.prod.default_tob.yml",
+          "conf/lf.prod.default_tob_imagex.yml",
+          "conf/lf.prod.yml",
+          "conf/lf.test.yml",
+          "conf/lq.prod.default_tob.yml",
+          "conf/lq.prod.default_tob_imagex.yml",
+          "conf/lq.prod.yml",
+          "conf/maliva.prod.yml",
+          "conf/my.prod.yml",
+          "conf/my2.prod.yml",
+          "conf/my3.prod.yml",
+          "conf/mya.prod.default_tob.yml",
+          "conf/mya.prod.default_tob_bp.yml",
+          "conf/mya.prod.default_tob_imagex.yml",
+          "conf/mya.prod.yml",
+          "conf/myb.prod.default_tob.yml",
+          "conf/myb.prod.default_tob_bp.yml",
+          "conf/myb.prod.default_tob_imagex.yml",
+          "conf/myb.prod.yml",
+          "conf/no1a.prod.yml",
+          "conf/sg1.prod.yml",
+          "conf/sgcomm1.prod.yml",
+          "conf/sinfonline.yml",
+          "conf/sinfonlinea.yml",
+          "conf/sinfonlinec.yml",
+          "conf/syka2lark.prod.yml",
+          "conf/sykalark.prod.yml",
+          "conf/syprivatelark.prod.yml",
+          "conf/toutiao_videoarch_account.yaml",
+          "conf/useast2a.prod.yml",
+          "conf/useast2b.prod.yml",
+          "conf/useast5.prod.yml",
+          "conf/useast8.prod.yml",
+          "conf/xh.prod.yml",
+          "conf/zb.prod.yml",
+          "conf/zjg.prod.yml"
+        ]
+      },
+      {
+        "name": "Other — data",
+        "slug": "other-data",
+        "files": [
+          "data/db.sql"
+        ]
+      },
+      {
+        "name": "Other — go.mod",
+        "slug": "other-go-mod",
+        "files": [
+          "go.mod"
+        ]
+      },
+      {
+        "name": "Other — script",
+        "slug": "other-script",
+        "files": [
+          "script/bootstrap.sh",
+          "script/pre_nginx.sh",
+          "script/settings.py"
+        ]
+      },
+      {
+        "name": "Other — config",
+        "slug": "other-config",
+        "files": [
+          "src/config/base_test.go",
+          "src/config/config_test.go",
+          "src/config/validator_test.go"
+        ]
+      },
+      {
+        "name": "Other — controllers",
+        "slug": "other-controllers",
+        "files": [
+          "src/controllers/account_test.go",
+          "src/controllers/base_test.go"
+        ]
+      },
+      {
+        "name": "Other — dao",
+        "slug": "other-dao",
+        "files": [
+          "src/dao/access_test.go",
+          "src/dao/account_test.go",
+          "src/dao/authority_test.go",
+          "src/dao/base_test.go",
+          "src/dao/category_schema_test.go",
+          "src/dao/condition_test.go",
+          "src/dao/domain_auth_test.go",
+          "src/dao/domain_test.go",
+          "src/dao/instance_test.go",
+          "src/dao/sync_config_test.go",
+          "src/dao/task_test.go",
+          "src/dao/video_account_test.go",
+          "src/dao/video_config_test.go",
+          "src/dao/video_rule_test.go"
+        ]
+      },
+      {
+        "name": "Other — dto",
+        "slug": "other-dto",
+        "files": [
+          "src/dto/access_test.go",
+          "src/dto/authority_test.go",
+          "src/dto/condition_test.go",
+          "src/dto/domain_auth_test.go",
+          "src/dto/domain_test.go",
+          "src/dto/model_test.go",
+          "src/dto/video_account_test.go",
+          "src/dto/video_rule_test.go"
+        ]
+      },
+      {
+        "name": "Other — errno",
+        "slug": "other-errno",
+        "files": [
+          "src/errno/code_test.go"
+        ]
+      },
+      {
+        "name": "Other — interface_limiter",
+        "slug": "other-interface-limiter",
+        "files": [
+          "src/interface_limiter/interface_limiter_test.go"
+        ]
+      },
+      {
+        "name": "Other — mem_limit",
+        "slug": "other-mem-limit",
+        "files": [
+          "src/mem_limit/memlimit_test.go"
+        ]
+      },
+      {
+        "name": "Other — middleware",
+        "slug": "other-middleware",
+        "files": [
+          "src/middleware/access_test.go",
+          "src/middleware/acl_test.go",
+          "src/middleware/base_test.go",
+          "src/middleware/circuit_breaker_test.go",
+          "src/middleware/filter_test.go",
+          "src/middleware/janus_access_test.go",
+          "src/middleware/logging_test.go",
+          "src/middleware/rate_limiter_test.go",
+          "src/middleware/wand_access_test.go"
+        ]
+      },
+      {
+        "name": "Other — remote",
+        "slug": "other-remote",
+        "files": [
+          "src/remote/http_utils_test.go"
+        ]
+      },
+      {
+        "name": "Other — remote_cache",
+        "slug": "other-remote-cache",
+        "files": [
+          "src/remote_cache/base_test.go",
+          "src/remote_cache/cache_test.go",
+          "src/remote_cache/cdn_domain_test.go",
+          "src/remote_cache/domain_rel_test.go",
+          "src/remote_cache/nop_cache_test.go",
+          "src/remote_cache/video_account_test.go"
+        ]
+      },
+      {
+        "name": "Other — rocketmq",
+        "slug": "other-rocketmq",
+        "files": [
+          "src/rocketmq/consumer/base_test.go",
+          "src/rocketmq/consumer/handler_test.go"
+        ]
+      },
+      {
+        "name": "Other — rpc",
+        "slug": "other-rpc",
+        "files": [
+          "src/rpc/base_test.go",
+          "src/rpc/bucket_test.go"
+        ]
+      },
+      {
+        "name": "Other — service",
+        "slug": "other-service",
+        "files": [
+          "src/service/access_test.go",
+          "src/service/account_category_schema_test.go",
+          "src/service/account_test.go",
+          "src/service/authority_test.go",
+          "src/service/base_test.go",
+          "src/service/bpm_test.go",
+          "src/service/condition_test.go",
+          "src/service/config_test.go",
+          "src/service/domain_auth_test.go",
+          "src/service/domain_test.go",
+          "src/service/instance_test.go",
+          "src/service/refresh_cache_test.go",
+          "src/service/rule_test.go",
+          "src/service/task_test.go",
+          "src/service/wand_test.go"
+        ]
+      },
+      {
+        "name": "Other — tcc",
+        "slug": "other-tcc",
+        "files": [
+          "src/tcc/acl_test.go",
+          "src/tcc/base_test.go",
+          "src/tcc/circuit_breaker_test.go",
+          "src/tcc/config_test.go",
+          "src/tcc/is_admin_test.go",
+          "src/tcc/setting_account_nocahce_whitelist_test.go",
+          "src/tcc/setting_allowlist_test.go",
+          "src/tcc/setting_check_storage_config_whitelist_test.go",
+          "src/tcc/setting_localcache_test.go",
+          "src/tcc/setting_metadata_blacklist_test.go",
+          "src/tcc/setting_redis_cache_test.go",
+          "src/tcc/setting_remote_test.go"
+        ]
+      },
+      {
+        "name": "Other — util",
+        "slug": "other-util",
+        "files": [
+          "src/util/base_test.go",
+          "src/util/common_test.go",
+          "src/util/id_gen_util_test.go",
+          "src/util/metrics_test.go",
+          "src/util/region_test.go",
+          "src/util/tools_test.go"
+        ]
+      },
+      {
+        "name": "Other — validator",
+        "slug": "other-validator",
+        "files": [
+          "src/validator/base_test.go",
+          "src/validator/validator_test.go"
+        ]
+      },
+      {
+        "name": "Other — test.sh",
+        "slug": "other-test-sh",
+        "files": [
+          "test.sh"
+        ]
+      },
+      {
+        "name": "Other — test",
+        "slug": "other-test",
+        "files": [
+          "test/client_test.go",
+          "test/config_test.go",
+          "test/iface_test.http",
+          "test/model_test.go",
+          "test/tsconfig.json"
+        ]
+      }
+    ]
+  }
+]
