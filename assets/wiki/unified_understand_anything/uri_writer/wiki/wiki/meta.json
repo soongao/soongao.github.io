@@ -1,0 +1,168 @@
+{
+  "fromCommit": "03f4aced503d1602814c085c82b5c958f62f68e2",
+  "generatedAt": "2026-07-15T11:25:23.370Z",
+  "model": "",
+  "lang": "chinese",
+  "moduleFiles": {
+    "Application Startup and Lifecycle": [
+      "cmd/writer_server/main.go",
+      "main.go",
+      "main_test.go",
+      "config/config.go",
+      "config/config_test.go",
+      "lifecycle/lifecycle.go"
+    ],
+    "Writer Orchestration": [
+      "writer/writer.go",
+      "writer/writer_start_test.go"
+    ],
+    "Bucket State and Spill Management": [
+      "writer/bucket_ctx.go",
+      "writer/bucket_ctx_test.go",
+      "writer/spill_control_test.go",
+      "writer/max_concurrent_merges_test.go"
+    ],
+    "Write Request Handling and Backpressure": [
+      "writer/handlers.go",
+      "writer/cpu_backpressure.go",
+      "writer/handlers_cpu_backpressure_test.go",
+      "writer/handlers_rpc_integration_test.go",
+      "writer/local_hdfs_memory_integration_test.go",
+      "writer/waiting_server_integration_test.go"
+    ],
+    "Output Sinks and Resource Pools": [
+      "writer/final_sink.go",
+      "writer/pool.go",
+      "writer/errors.go"
+    ],
+    "Writer RPC Service": [
+      "service/doc.go",
+      "service/impl.go",
+      "service/server.go"
+    ],
+    "Control Plane and Routing": [
+      "controlplane/client.go",
+      "router/registrar.go",
+      "router/registrar_test.go"
+    ],
+    "Thrift IDL and Generated RPC Bindings": [
+      "idl/base.thrift",
+      "idl/uri_writer.thrift",
+      "kitex_gen/base/base.go",
+      "kitex_gen/base/k-base.go",
+      "kitex_gen/base/k-consts.go",
+      "kitex_gen/uri_writer/uri_writer.go",
+      "kitex_gen/uri_writer/k-consts.go",
+      "kitex_gen/uri_writer/k-uri_writer.go",
+      "kitex_gen/uri_writer/writerservice/client.go",
+      "kitex_gen/uri_writer/writerservice/server.go",
+      "kitex_gen/uri_writer/writerservice/writerservice.go"
+    ],
+    "Project Operations": [
+      "Makefile",
+      "README.md",
+      "build.sh",
+      "go.mod",
+      "debug-cpu-spike-analysis.md"
+    ]
+  },
+  "moduleTree": [
+    {
+      "name": "Application Startup and Lifecycle",
+      "slug": "application-startup-and-lifecycle",
+      "files": [
+        "cmd/writer_server/main.go",
+        "main.go",
+        "main_test.go",
+        "config/config.go",
+        "config/config_test.go",
+        "lifecycle/lifecycle.go"
+      ]
+    },
+    {
+      "name": "Writer Orchestration",
+      "slug": "writer-orchestration",
+      "files": [
+        "writer/writer.go",
+        "writer/writer_start_test.go"
+      ]
+    },
+    {
+      "name": "Bucket State and Spill Management",
+      "slug": "bucket-state-and-spill-management",
+      "files": [
+        "writer/bucket_ctx.go",
+        "writer/bucket_ctx_test.go",
+        "writer/spill_control_test.go",
+        "writer/max_concurrent_merges_test.go"
+      ]
+    },
+    {
+      "name": "Write Request Handling and Backpressure",
+      "slug": "write-request-handling-and-backpressure",
+      "files": [
+        "writer/handlers.go",
+        "writer/cpu_backpressure.go",
+        "writer/handlers_cpu_backpressure_test.go",
+        "writer/handlers_rpc_integration_test.go",
+        "writer/local_hdfs_memory_integration_test.go",
+        "writer/waiting_server_integration_test.go"
+      ]
+    },
+    {
+      "name": "Output Sinks and Resource Pools",
+      "slug": "output-sinks-and-resource-pools",
+      "files": [
+        "writer/final_sink.go",
+        "writer/pool.go",
+        "writer/errors.go"
+      ]
+    },
+    {
+      "name": "Writer RPC Service",
+      "slug": "writer-rpc-service",
+      "files": [
+        "service/doc.go",
+        "service/impl.go",
+        "service/server.go"
+      ]
+    },
+    {
+      "name": "Control Plane and Routing",
+      "slug": "control-plane-and-routing",
+      "files": [
+        "controlplane/client.go",
+        "router/registrar.go",
+        "router/registrar_test.go"
+      ]
+    },
+    {
+      "name": "Thrift IDL and Generated RPC Bindings",
+      "slug": "thrift-idl-and-generated-rpc-bindings",
+      "files": [
+        "idl/base.thrift",
+        "idl/uri_writer.thrift",
+        "kitex_gen/base/base.go",
+        "kitex_gen/base/k-base.go",
+        "kitex_gen/base/k-consts.go",
+        "kitex_gen/uri_writer/uri_writer.go",
+        "kitex_gen/uri_writer/k-consts.go",
+        "kitex_gen/uri_writer/k-uri_writer.go",
+        "kitex_gen/uri_writer/writerservice/client.go",
+        "kitex_gen/uri_writer/writerservice/server.go",
+        "kitex_gen/uri_writer/writerservice/writerservice.go"
+      ]
+    },
+    {
+      "name": "Project Operations",
+      "slug": "project-operations",
+      "files": [
+        "Makefile",
+        "README.md",
+        "build.sh",
+        "go.mod",
+        "debug-cpu-spike-analysis.md"
+      ]
+    }
+  ]
+}

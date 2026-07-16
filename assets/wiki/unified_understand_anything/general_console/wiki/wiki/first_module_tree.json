@@ -1,0 +1,304 @@
+[
+  {
+    "name": "Application Entry and Routing",
+    "slug": "application-entry-and-routing",
+    "files": [
+      "main.go",
+      "router.go",
+      "router_gen.go"
+    ]
+  },
+  {
+    "name": "Runtime Configuration",
+    "slug": "runtime-configuration",
+    "files": [
+      "biz/config/config.go",
+      "biz/config/mysql.go",
+      "biz/config/tcc.go"
+    ]
+  },
+  {
+    "name": "Database Access",
+    "slug": "database-access",
+    "files": [
+      "biz/dal/dao/authority.go",
+      "biz/dal/dao/db.go",
+      "biz/dal/dao/utils.go",
+      "biz/dal/dto/authority.go"
+    ]
+  },
+  {
+    "name": "Error and Response Contracts",
+    "slug": "error-and-response-contracts",
+    "files": [
+      "biz/errno/error.go",
+      "biz/errno/response.go"
+    ]
+  },
+  {
+    "name": "Middleware and Request Authentication",
+    "slug": "middleware-and-request-authentication",
+    "files": [
+      "biz/middleware/base.go",
+      "biz/middleware/parse_mdap_auth.go"
+    ]
+  },
+  {
+    "name": "General Console Handlers",
+    "slug": "general-console-handlers",
+    "files": [
+      "biz/handler/account.go",
+      "biz/handler/authorize.go",
+      "biz/handler/config.go",
+      "biz/handler/domain.go",
+      "biz/handler/general.go",
+      "biz/handler/object.go",
+      "biz/handler/server.go",
+      "biz/handler/top_account.go"
+    ]
+  },
+  {
+    "name": "BPM and Account Provisioning",
+    "slug": "bpm-and-account-provisioning",
+    "files": [
+      "biz/handler/bpm.go",
+      "biz/handler/script.go"
+    ]
+  },
+  {
+    "name": "MDAP Core APIs",
+    "slug": "mdap-core-apis",
+    "files": [
+      "biz/handler/mdap.go",
+      "biz/handler/mdap_artifact.go",
+      "biz/handler/mdap_asset_group.go",
+      "biz/handler/mdap_clients.go",
+      "biz/handler/mdap_grant_space_role.go",
+      "biz/handler/mdap_source.go",
+      "biz/handler/mdap_space.go"
+    ]
+  },
+  {
+    "name": "MDAP Processing Tasks",
+    "slug": "mdap-processing-tasks",
+    "files": [
+      "biz/handler/mdap_processing_task.go"
+    ]
+  },
+  {
+    "name": "MDAP Hive Source Import",
+    "slug": "mdap-hive-source-import",
+    "files": [
+      "biz/handler/mdap_source_hive.go",
+      "biz/handler/mdap_source_hive_tqs.go"
+    ]
+  },
+  {
+    "name": "Bucket and TOS Operations",
+    "slug": "bucket-and-tos-operations",
+    "files": [
+      "biz/model/bktmeta.go",
+      "biz/model/tos.go",
+      "biz/rpc/bktmeta.go",
+      "biz/rpc/nontt_tos.go"
+    ]
+  },
+  {
+    "name": "BPM Workflow Models",
+    "slug": "bpm-workflow-models",
+    "files": [
+      "biz/model/bpm_workflow.go"
+    ]
+  },
+  {
+    "name": "Shared Utilities",
+    "slug": "shared-utilities",
+    "files": [
+      "biz/util/ctx.go",
+      "biz/util/iam.go",
+      "biz/util/metrics.go"
+    ]
+  },
+  {
+    "name": "Thrift IDL and Generated Clients",
+    "slug": "thrift-idl-and-generated-clients",
+    "files": [],
+    "children": [
+      {
+        "name": "Thrift IDL and Generated Clients — biz",
+        "slug": "thrift-idl-and-generated-clients-biz",
+        "files": [
+          "biz/base.thrift"
+        ]
+      },
+      {
+        "name": "Thrift IDL and Generated Clients — idl",
+        "slug": "thrift-idl-and-generated-clients-idl",
+        "files": [
+          "biz/idl/object_duplication_manager.thrift",
+          "biz/idl/kitex_gen/base/base.go",
+          "biz/idl/kitex_gen/base/k-base.go",
+          "biz/idl/kitex_gen/base/k-consts.go",
+          "biz/idl/kitex_gen/bytedance/videoarch/object_duplication_manager/k-consts.go",
+          "biz/idl/kitex_gen/bytedance/videoarch/object_duplication_manager/k-object_duplication_manager.go",
+          "biz/idl/kitex_gen/bytedance/videoarch/object_duplication_manager/object_duplication_manager.go",
+          "biz/idl/kitex_gen/bytedance/videoarch/object_duplication_manager/objectduplicationmanager/client.go",
+          "biz/idl/kitex_gen/bytedance/videoarch/object_duplication_manager/objectduplicationmanager/invoker.go",
+          "biz/idl/kitex_gen/bytedance/videoarch/object_duplication_manager/objectduplicationmanager/objectduplicationmanager.go",
+          "biz/idl/kitex_gen/bytedance/videoarch/object_duplication_manager/objectduplicationmanager/server.go"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Other",
+    "slug": "other",
+    "files": [],
+    "children": [
+      {
+        "name": "Other — config",
+        "slug": "other-config",
+        "files": [
+          "biz/config/base_test.go",
+          "biz/config/mysql_test.go",
+          "biz/config/tcc_test.go"
+        ]
+      },
+      {
+        "name": "Other — dal",
+        "slug": "other-dal",
+        "files": [
+          "biz/dal/dao/authority_test.go",
+          "biz/dal/dao/base_test.go",
+          "biz/dal/dao/db_test.go",
+          "biz/dal/dao/utils_test.go",
+          "biz/dal/db/db.sql"
+        ]
+      },
+      {
+        "name": "Other — errno",
+        "slug": "other-errno",
+        "files": [
+          "biz/errno/base_test.go",
+          "biz/errno/response_test.go"
+        ]
+      },
+      {
+        "name": "Other — handler",
+        "slug": "other-handler",
+        "files": [
+          "biz/handler/account_test.go",
+          "biz/handler/authorize_test.go",
+          "biz/handler/base_test.go",
+          "biz/handler/bpm_test.go",
+          "biz/handler/config_test.go",
+          "biz/handler/domain_test.go",
+          "biz/handler/mdap_processing_task_test.go",
+          "biz/handler/mdap_source_hive_test.go",
+          "biz/handler/mdap_source_hive_tqs_test.go",
+          "biz/handler/object_test.go",
+          "biz/handler/script_test.go",
+          "biz/handler/server_test.go",
+          "biz/handler/top_account_test.go"
+        ]
+      },
+      {
+        "name": "Other — middleware",
+        "slug": "other-middleware",
+        "files": [
+          "biz/middleware/base_test.go",
+          "biz/middleware/mdap_response_test.go",
+          "biz/middleware/parse_mdap_auth_test.go"
+        ]
+      },
+      {
+        "name": "Other — rpc",
+        "slug": "other-rpc",
+        "files": [
+          "biz/rpc/bktmeta_test.go",
+          "biz/rpc/nontt_tos_test.go"
+        ]
+      },
+      {
+        "name": "Other — util",
+        "slug": "other-util",
+        "files": [
+          "biz/util/base_test.go",
+          "biz/util/ctx_test.go",
+          "biz/util/iam_test.go",
+          "biz/util/metrics_test.go"
+        ]
+      },
+      {
+        "name": "Other — build.sh",
+        "slug": "other-build-sh",
+        "files": [
+          "build.sh"
+        ]
+      },
+      {
+        "name": "Other — conf",
+        "slug": "other-conf",
+        "files": [
+          "conf/base.yml",
+          "conf/boe.staging.yml",
+          "conf/boe.test.yml",
+          "conf/boe.ut.yml",
+          "conf/boei18n.staging.yml",
+          "conf/config.yml",
+          "conf/gl2.prod.yml",
+          "conf/hertz.config.yaml",
+          "conf/hj.prod.yml",
+          "conf/hl.prod.yml",
+          "conf/ie.prod.yml",
+          "conf/jj.prod.yml",
+          "conf/lf.prod.yml",
+          "conf/lq.prod.yml",
+          "conf/maliva.prod.yml",
+          "conf/my.prod.yml",
+          "conf/my3.prod.yml",
+          "conf/mya.prod.yml",
+          "conf/myb.prod.yml",
+          "conf/no1a.prod.yml",
+          "conf/sg1.prod.yml",
+          "conf/sgcomm1.prod.yml",
+          "conf/useast2a.prod.yml",
+          "conf/useast2b.prod.yml",
+          "conf/useast5.prod.yml",
+          "conf/useast8.prod.yml",
+          "conf/xh.prod.yml",
+          "conf/zb.prod.yml",
+          "conf/zjg.prod.yml"
+        ]
+      },
+      {
+        "name": "Other — openapi",
+        "slug": "other-openapi",
+        "files": [
+          "docs/openapi/mdap_v1.yaml"
+        ]
+      },
+      {
+        "name": "Other — go.mod",
+        "slug": "other-go-mod",
+        "files": [
+          "go.mod"
+        ]
+      },
+      {
+        "name": "Other — router_test.go",
+        "slug": "other-router-test-go",
+        "files": [
+          "router_test.go"
+        ]
+      },
+      {
+        "name": "Other — script",
+        "slug": "other-script",
+        "files": [
+          "script/bootstrap.sh"
+        ]
+      }
+    ]
+  }
+]

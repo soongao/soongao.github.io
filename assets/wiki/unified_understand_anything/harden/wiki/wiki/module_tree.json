@@ -1,0 +1,160 @@
+[
+  {
+    "name": "Address Discovery",
+    "slug": "address-discovery",
+    "files": [
+      "addr/addr.go",
+      "addr/get_addr.go",
+      "addr/addr_test.go"
+    ]
+  },
+  {
+    "name": "Remote Coordination",
+    "slug": "remote-coordination",
+    "files": [
+      "conRemote/baseInfo.go",
+      "conRemote/concurrentBase.go",
+      "conRemote/config.go",
+      "conRemote/enter.go",
+      "conRemote/leave.go",
+      "conRemote/uuidsBase.go"
+    ]
+  },
+  {
+    "name": "Consistent Hashing",
+    "slug": "consistent-hashing",
+    "files": [
+      "consistent/consistent.go",
+      "consistent/consistent_test.go",
+      "consistent/example_test.go"
+    ]
+  },
+  {
+    "name": "Rate Limiting Core",
+    "slug": "rate-limiting-core",
+    "files": [
+      "rate/rate.go",
+      "rate/rate_test.go",
+      "types/reserve.go"
+    ]
+  },
+  {
+    "name": "Token Buckets",
+    "slug": "token-buckets",
+    "files": [
+      "token/token_bucket.go",
+      "token/token_bucket_test.go",
+      "tokens/group.go",
+      "tokens/group_test.go"
+    ]
+  },
+  {
+    "name": "Remote Rate Limit API",
+    "slug": "remote-rate-limit-api",
+    "files": [
+      "remote/baseInfo.go",
+      "remote/isThrottled.go",
+      "remote/rateLimit.go",
+      "remote/sync.go",
+      "remote/v2/get_all_token_buckets.go",
+      "remote/v2/rate_limit.go",
+      "remote/v2/sync.go",
+      "types/v2/sync_struct.go"
+    ]
+  },
+  {
+    "name": "Synchronization Clients",
+    "slug": "synchronization-clients",
+    "files": [
+      "syncer/base.go",
+      "syncer/init.go",
+      "syncer/pack.go",
+      "syncer/sdk.go",
+      "syncer/send.go",
+      "syncer/v2/base.go",
+      "syncer/v2/init.go",
+      "syncer/v2/pack.go",
+      "syncer/v2/sdk.go",
+      "syncer/v2/send.go"
+    ]
+  },
+  {
+    "name": "UDP Server Protocol",
+    "slug": "udp-server-protocol",
+    "files": [
+      "udpserver/server.go",
+      "udpserver/stackprinter.go",
+      "udpserver/protocol/payload.pb.go",
+      "udpserver/protocol/payload.proto",
+      "udpserver/protocol/gen_proto.sh"
+    ]
+  },
+  {
+    "name": "Observability",
+    "slug": "observability",
+    "files": [
+      "metrics/metrics.go",
+      "middleware/group_middleware.go"
+    ]
+  },
+  {
+    "name": "Runtime Configuration",
+    "slug": "runtime-configuration",
+    "files": [
+      "config/config.go",
+      "tcc/tcc.go",
+      "conf/alinc2.prod.yml",
+      "conf/base.yml",
+      "conf/boe.staging.default_tob_bp.yml",
+      "conf/boe.staging.yml",
+      "conf/boe.unit_test.yml",
+      "conf/boei18n.staging.default_tob.yml",
+      "conf/boei18n.staging.yml",
+      "conf/boei18n.yml",
+      "conf/hl.prod.default.yml",
+      "conf/hl.prod.default_tob.yml",
+      "conf/hl.prod.transcode.yml",
+      "conf/hl.prod.unit_test.yml",
+      "conf/hl.prod.vframe.yml",
+      "conf/hl.prod.yml",
+      "conf/lf.prod.default.yml",
+      "conf/lf.prod.default_tob.yml",
+      "conf/lf.prod.transcode.yml",
+      "conf/lf.prod.unit_test.yml",
+      "conf/lf.prod.vframe.yml",
+      "conf/lf.prod.yml",
+      "conf/lf.test.yml",
+      "conf/lq.prod.default.yml",
+      "conf/lq.prod.default_tob.yml",
+      "conf/lq.prod.transcode.yml",
+      "conf/lq.prod.unit_test.yml",
+      "conf/lq.prod.vframe.yml",
+      "conf/lq.prod.yml",
+      "conf/maliva.prod.vframe.yml",
+      "conf/maliva.prod.yml",
+      "conf/mya.prod.default_tob_bp.yml",
+      "conf/myb.prod.default_tob_bp.yml",
+      "conf/sg1.prod.yml",
+      "conf/sgcomm1.prod.yml",
+      "conf/sinfonline.yml",
+      "conf/sinfonlinea.yml",
+      "conf/sinfonlinec.yml",
+      "conf/toutiao_videoarch_harden.yaml",
+      "conf/useast2a.prod.vframe.yml",
+      "conf/useast2a.prod.yml"
+    ]
+  },
+  {
+    "name": "Application Entry and Tooling",
+    "slug": "application-entry-and-tooling",
+    "files": [
+      "README.md",
+      "consistent/README.md",
+      "main.go",
+      "go.mod",
+      "build.sh",
+      "script/bootstrap.sh",
+      "script/settings.py"
+    ]
+  }
+]

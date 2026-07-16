@@ -1,0 +1,263 @@
+{
+  "fromCommit": "cc5e3a2068495561d69cf5e99ac70fcfacd4cae8",
+  "generatedAt": "2026-07-15T11:28:04.478Z",
+  "model": "",
+  "lang": "chinese",
+  "moduleFiles": {
+    "Control Plane Reporting": [
+      "controlplane/client.go",
+      "controlplane/reporter.go",
+      "controlplane/tracker.go",
+      "controlplane/types.go"
+    ],
+    "Bucket Assignment": [
+      "internal/bucketing/bucketing.go"
+    ],
+    "HDFS Parquet Source": [
+      "internal/source/hdfsparquet/bucketer.go",
+      "internal/source/hdfsparquet/extra_query_client.go",
+      "internal/source/hdfsparquet/extractor.go",
+      "internal/source/hdfsparquet/iterator.go",
+      "internal/source/hdfsparquet/parser.go",
+      "internal/source/hdfsparquet/path_compat.go",
+      "internal/source/hdfsparquet/reader.go",
+      "internal/source/hdfsparquet/scanner.go",
+      "internal/source/hdfsparquet/storagegw.go",
+      "internal/source/hdfsparquet/types.go",
+      "internal/source/hdfsparquet/uri.go",
+      "internal/source/hdfsparquet/wrapper.go"
+    ],
+    "Manifest Expansion": [
+      "internal/source/manifest/manifest.go"
+    ],
+    "Shared Source Pipeline": [
+      "internal/source/sourcecommon/sink_stage.go"
+    ],
+    "TOS Inventory CSV Source": [
+      "internal/source/tosinventorycsv/reader.go"
+    ],
+    "Sink Callbacks": [
+      "sink/local.go",
+      "sink/types.go",
+      "sink/writer_rpc.go"
+    ],
+    "Application Entry Point": [
+      "main.go"
+    ],
+    "Other": [
+      "Makefile",
+      "build.sh",
+      "controlplane/reporter_test.go",
+      "diagnostics/writer_rpc_diagnosis.html",
+      "go.mod",
+      "internal/bucketing/bucketing_test.go",
+      "internal/source/hdfsparquet/extra_query_client_test.go",
+      "internal/source/hdfsparquet/extractor_test.go",
+      "internal/source/hdfsparquet/hdfs_integration_test.go",
+      "internal/source/hdfsparquet/iterator_test.go",
+      "internal/source/hdfsparquet/reader_helpers_test.go",
+      "internal/source/hdfsparquet/reader_progress_test.go",
+      "internal/source/hdfsparquet/testdata/oABGAFmIb82G5FeeAXQKfeImLUI2FAtktStlAI.m3u8",
+      "internal/source/sourcecommon/sink_stage_test.go",
+      "internal/source/tosinventorycsv/reader_benchmark_test.go",
+      "internal/source/tosinventorycsv/reader_test.go",
+      "main_test.go",
+      "sink/local_test.go",
+      "sink/writer_rpc_benchmark_test.go",
+      "sink/writer_rpc_test.go"
+    ],
+    "Other — Makefile": [
+      "Makefile"
+    ],
+    "Other — build.sh": [
+      "build.sh"
+    ],
+    "Other — controlplane": [
+      "controlplane/reporter_test.go"
+    ],
+    "Other — diagnostics": [
+      "diagnostics/writer_rpc_diagnosis.html"
+    ],
+    "Other — go.mod": [
+      "go.mod"
+    ],
+    "Other — bucketing": [
+      "internal/bucketing/bucketing_test.go"
+    ],
+    "Other — source": [
+      "internal/source/hdfsparquet/extra_query_client_test.go",
+      "internal/source/hdfsparquet/extractor_test.go",
+      "internal/source/hdfsparquet/hdfs_integration_test.go",
+      "internal/source/hdfsparquet/iterator_test.go",
+      "internal/source/hdfsparquet/reader_helpers_test.go",
+      "internal/source/hdfsparquet/reader_progress_test.go",
+      "internal/source/hdfsparquet/testdata/oABGAFmIb82G5FeeAXQKfeImLUI2FAtktStlAI.m3u8",
+      "internal/source/sourcecommon/sink_stage_test.go",
+      "internal/source/tosinventorycsv/reader_benchmark_test.go",
+      "internal/source/tosinventorycsv/reader_test.go"
+    ],
+    "Other — main_test.go": [
+      "main_test.go"
+    ],
+    "Other — sink": [
+      "sink/local_test.go",
+      "sink/writer_rpc_benchmark_test.go",
+      "sink/writer_rpc_test.go"
+    ]
+  },
+  "moduleTree": [
+    {
+      "name": "Control Plane Reporting",
+      "slug": "control-plane-reporting",
+      "files": [
+        "controlplane/client.go",
+        "controlplane/reporter.go",
+        "controlplane/tracker.go",
+        "controlplane/types.go"
+      ]
+    },
+    {
+      "name": "Bucket Assignment",
+      "slug": "bucket-assignment",
+      "files": [
+        "internal/bucketing/bucketing.go"
+      ]
+    },
+    {
+      "name": "HDFS Parquet Source",
+      "slug": "hdfs-parquet-source",
+      "files": [
+        "internal/source/hdfsparquet/bucketer.go",
+        "internal/source/hdfsparquet/extra_query_client.go",
+        "internal/source/hdfsparquet/extractor.go",
+        "internal/source/hdfsparquet/iterator.go",
+        "internal/source/hdfsparquet/parser.go",
+        "internal/source/hdfsparquet/path_compat.go",
+        "internal/source/hdfsparquet/reader.go",
+        "internal/source/hdfsparquet/scanner.go",
+        "internal/source/hdfsparquet/storagegw.go",
+        "internal/source/hdfsparquet/types.go",
+        "internal/source/hdfsparquet/uri.go",
+        "internal/source/hdfsparquet/wrapper.go"
+      ]
+    },
+    {
+      "name": "Manifest Expansion",
+      "slug": "manifest-expansion",
+      "files": [
+        "internal/source/manifest/manifest.go"
+      ]
+    },
+    {
+      "name": "Shared Source Pipeline",
+      "slug": "shared-source-pipeline",
+      "files": [
+        "internal/source/sourcecommon/sink_stage.go"
+      ]
+    },
+    {
+      "name": "TOS Inventory CSV Source",
+      "slug": "tos-inventory-csv-source",
+      "files": [
+        "internal/source/tosinventorycsv/reader.go"
+      ]
+    },
+    {
+      "name": "Sink Callbacks",
+      "slug": "sink-callbacks",
+      "files": [
+        "sink/local.go",
+        "sink/types.go",
+        "sink/writer_rpc.go"
+      ]
+    },
+    {
+      "name": "Application Entry Point",
+      "slug": "application-entry-point",
+      "files": [
+        "main.go"
+      ]
+    },
+    {
+      "name": "Other",
+      "slug": "other",
+      "files": [],
+      "children": [
+        {
+          "name": "Other — Makefile",
+          "slug": "other-makefile",
+          "files": [
+            "Makefile"
+          ]
+        },
+        {
+          "name": "Other — build.sh",
+          "slug": "other-build-sh",
+          "files": [
+            "build.sh"
+          ]
+        },
+        {
+          "name": "Other — controlplane",
+          "slug": "other-controlplane",
+          "files": [
+            "controlplane/reporter_test.go"
+          ]
+        },
+        {
+          "name": "Other — diagnostics",
+          "slug": "other-diagnostics",
+          "files": [
+            "diagnostics/writer_rpc_diagnosis.html"
+          ]
+        },
+        {
+          "name": "Other — go.mod",
+          "slug": "other-go-mod",
+          "files": [
+            "go.mod"
+          ]
+        },
+        {
+          "name": "Other — bucketing",
+          "slug": "other-bucketing",
+          "files": [
+            "internal/bucketing/bucketing_test.go"
+          ]
+        },
+        {
+          "name": "Other — source",
+          "slug": "other-source",
+          "files": [
+            "internal/source/hdfsparquet/extra_query_client_test.go",
+            "internal/source/hdfsparquet/extractor_test.go",
+            "internal/source/hdfsparquet/hdfs_integration_test.go",
+            "internal/source/hdfsparquet/iterator_test.go",
+            "internal/source/hdfsparquet/reader_helpers_test.go",
+            "internal/source/hdfsparquet/reader_progress_test.go",
+            "internal/source/hdfsparquet/testdata/oABGAFmIb82G5FeeAXQKfeImLUI2FAtktStlAI.m3u8",
+            "internal/source/sourcecommon/sink_stage_test.go",
+            "internal/source/tosinventorycsv/reader_benchmark_test.go",
+            "internal/source/tosinventorycsv/reader_test.go"
+          ]
+        },
+        {
+          "name": "Other — main_test.go",
+          "slug": "other-main-test-go",
+          "files": [
+            "main_test.go"
+          ]
+        },
+        {
+          "name": "Other — sink",
+          "slug": "other-sink",
+          "files": [
+            "sink/local_test.go",
+            "sink/writer_rpc_benchmark_test.go",
+            "sink/writer_rpc_test.go"
+          ]
+        }
+      ]
+    }
+  ]
+}

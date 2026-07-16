@@ -1,0 +1,304 @@
+{
+  "fromCommit": "19b258e719e1ddc6db64f5c6bd310bf5e1645c93",
+  "generatedAt": "2026-07-16T02:00:52.813Z",
+  "model": "",
+  "lang": "chinese",
+  "moduleFiles": {
+    "Service Entry Point": [
+      "cmd/main.go"
+    ],
+    "HTTP API": [
+      "internal/api/handlers.go",
+      "internal/api/response.go",
+      "internal/types/dto.go"
+    ],
+    "Configuration": [
+      "internal/config/config.go"
+    ],
+    "Job Orchestration": [
+      "internal/job/manager.go",
+      "internal/job/file_scanner.go"
+    ],
+    "Worker Scheduling": [
+      "internal/scheduler/scheduler.go",
+      "internal/scheduler/lambda_launcher.go"
+    ],
+    "Progress Collection": [
+      "internal/collector/collector.go"
+    ],
+    "Barrier and Finalization": [
+      "internal/barrier/barrier.go",
+      "internal/finalizer/finalizer.go"
+    ],
+    "Persistence and State Store": [
+      "internal/store/keys.go",
+      "internal/store/store.go",
+      "internal/types/states.go"
+    ],
+    "Writer RPC Integration": [
+      "internal/writerrpc/client.go"
+    ],
+    "Client Example": [
+      "examples/hertz_client/main.go"
+    ],
+    "Other": [
+      "README.md",
+      "api/swagger.yaml",
+      "build.sh",
+      "conf/base.yml",
+      "conf/hertz.config.yaml",
+      "docs/integration.md",
+      "go.mod",
+      "internal/api/handlers_test.go",
+      "internal/barrier/barrier_test.go",
+      "internal/collector/collector_test.go",
+      "internal/finalizer/finalizer_test.go",
+      "internal/job/file_scanner_test.go",
+      "internal/job/manager_test.go",
+      "internal/scheduler/lambda_launcher_test.go",
+      "internal/store/store_test.go",
+      "internal/writerrpc/client_test.go",
+      "script/bootstrap.sh"
+    ],
+    "Other — README.md": [
+      "README.md"
+    ],
+    "Other — api": [
+      "api/swagger.yaml"
+    ],
+    "Other — build.sh": [
+      "build.sh"
+    ],
+    "Other — conf": [
+      "conf/base.yml",
+      "conf/hertz.config.yaml"
+    ],
+    "Other — docs": [
+      "docs/integration.md"
+    ],
+    "Other — go.mod": [
+      "go.mod"
+    ],
+    "Other — internal-api": [
+      "internal/api/handlers_test.go"
+    ],
+    "Other — internal-barrier": [
+      "internal/barrier/barrier_test.go"
+    ],
+    "Other — internal-collector": [
+      "internal/collector/collector_test.go"
+    ],
+    "Other — internal-finalizer": [
+      "internal/finalizer/finalizer_test.go"
+    ],
+    "Other — internal-job": [
+      "internal/job/file_scanner_test.go",
+      "internal/job/manager_test.go"
+    ],
+    "Other — internal-scheduler": [
+      "internal/scheduler/lambda_launcher_test.go"
+    ],
+    "Other — internal-store": [
+      "internal/store/store_test.go"
+    ],
+    "Other — internal-writerrpc": [
+      "internal/writerrpc/client_test.go"
+    ],
+    "Other — script": [
+      "script/bootstrap.sh"
+    ]
+  },
+  "moduleTree": [
+    {
+      "name": "Service Entry Point",
+      "slug": "service-entry-point",
+      "files": [
+        "cmd/main.go"
+      ]
+    },
+    {
+      "name": "HTTP API",
+      "slug": "http-api",
+      "files": [
+        "internal/api/handlers.go",
+        "internal/api/response.go",
+        "internal/types/dto.go"
+      ]
+    },
+    {
+      "name": "Configuration",
+      "slug": "configuration",
+      "files": [
+        "internal/config/config.go"
+      ]
+    },
+    {
+      "name": "Job Orchestration",
+      "slug": "job-orchestration",
+      "files": [
+        "internal/job/manager.go",
+        "internal/job/file_scanner.go"
+      ]
+    },
+    {
+      "name": "Worker Scheduling",
+      "slug": "worker-scheduling",
+      "files": [
+        "internal/scheduler/scheduler.go",
+        "internal/scheduler/lambda_launcher.go"
+      ]
+    },
+    {
+      "name": "Progress Collection",
+      "slug": "progress-collection",
+      "files": [
+        "internal/collector/collector.go"
+      ]
+    },
+    {
+      "name": "Barrier and Finalization",
+      "slug": "barrier-and-finalization",
+      "files": [
+        "internal/barrier/barrier.go",
+        "internal/finalizer/finalizer.go"
+      ]
+    },
+    {
+      "name": "Persistence and State Store",
+      "slug": "persistence-and-state-store",
+      "files": [
+        "internal/store/keys.go",
+        "internal/store/store.go",
+        "internal/types/states.go"
+      ]
+    },
+    {
+      "name": "Writer RPC Integration",
+      "slug": "writer-rpc-integration",
+      "files": [
+        "internal/writerrpc/client.go"
+      ]
+    },
+    {
+      "name": "Client Example",
+      "slug": "client-example",
+      "files": [
+        "examples/hertz_client/main.go"
+      ]
+    },
+    {
+      "name": "Other",
+      "slug": "other",
+      "files": [],
+      "children": [
+        {
+          "name": "Other — README.md",
+          "slug": "other-readme-md",
+          "files": [
+            "README.md"
+          ]
+        },
+        {
+          "name": "Other — api",
+          "slug": "other-api",
+          "files": [
+            "api/swagger.yaml"
+          ]
+        },
+        {
+          "name": "Other — build.sh",
+          "slug": "other-build-sh",
+          "files": [
+            "build.sh"
+          ]
+        },
+        {
+          "name": "Other — conf",
+          "slug": "other-conf",
+          "files": [
+            "conf/base.yml",
+            "conf/hertz.config.yaml"
+          ]
+        },
+        {
+          "name": "Other — docs",
+          "slug": "other-docs",
+          "files": [
+            "docs/integration.md"
+          ]
+        },
+        {
+          "name": "Other — go.mod",
+          "slug": "other-go-mod",
+          "files": [
+            "go.mod"
+          ]
+        },
+        {
+          "name": "Other — internal-api",
+          "slug": "other-internal-api",
+          "files": [
+            "internal/api/handlers_test.go"
+          ]
+        },
+        {
+          "name": "Other — internal-barrier",
+          "slug": "other-internal-barrier",
+          "files": [
+            "internal/barrier/barrier_test.go"
+          ]
+        },
+        {
+          "name": "Other — internal-collector",
+          "slug": "other-internal-collector",
+          "files": [
+            "internal/collector/collector_test.go"
+          ]
+        },
+        {
+          "name": "Other — internal-finalizer",
+          "slug": "other-internal-finalizer",
+          "files": [
+            "internal/finalizer/finalizer_test.go"
+          ]
+        },
+        {
+          "name": "Other — internal-job",
+          "slug": "other-internal-job",
+          "files": [
+            "internal/job/file_scanner_test.go",
+            "internal/job/manager_test.go"
+          ]
+        },
+        {
+          "name": "Other — internal-scheduler",
+          "slug": "other-internal-scheduler",
+          "files": [
+            "internal/scheduler/lambda_launcher_test.go"
+          ]
+        },
+        {
+          "name": "Other — internal-store",
+          "slug": "other-internal-store",
+          "files": [
+            "internal/store/store_test.go"
+          ]
+        },
+        {
+          "name": "Other — internal-writerrpc",
+          "slug": "other-internal-writerrpc",
+          "files": [
+            "internal/writerrpc/client_test.go"
+          ]
+        },
+        {
+          "name": "Other — script",
+          "slug": "other-script",
+          "files": [
+            "script/bootstrap.sh"
+          ]
+        }
+      ]
+    }
+  ]
+}

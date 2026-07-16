@@ -1,0 +1,193 @@
+[
+  {
+    "name": "Service Entry Point",
+    "slug": "service-entry-point",
+    "files": [
+      "cmd/main.go"
+    ]
+  },
+  {
+    "name": "HTTP API",
+    "slug": "http-api",
+    "files": [
+      "internal/api/handlers.go",
+      "internal/api/response.go",
+      "internal/types/dto.go"
+    ]
+  },
+  {
+    "name": "Configuration",
+    "slug": "configuration",
+    "files": [
+      "internal/config/config.go"
+    ]
+  },
+  {
+    "name": "Job Orchestration",
+    "slug": "job-orchestration",
+    "files": [
+      "internal/job/manager.go",
+      "internal/job/file_scanner.go"
+    ]
+  },
+  {
+    "name": "Worker Scheduling",
+    "slug": "worker-scheduling",
+    "files": [
+      "internal/scheduler/scheduler.go",
+      "internal/scheduler/lambda_launcher.go"
+    ]
+  },
+  {
+    "name": "Progress Collection",
+    "slug": "progress-collection",
+    "files": [
+      "internal/collector/collector.go"
+    ]
+  },
+  {
+    "name": "Barrier and Finalization",
+    "slug": "barrier-and-finalization",
+    "files": [
+      "internal/barrier/barrier.go",
+      "internal/finalizer/finalizer.go"
+    ]
+  },
+  {
+    "name": "Persistence and State Store",
+    "slug": "persistence-and-state-store",
+    "files": [
+      "internal/store/keys.go",
+      "internal/store/store.go",
+      "internal/types/states.go"
+    ]
+  },
+  {
+    "name": "Writer RPC Integration",
+    "slug": "writer-rpc-integration",
+    "files": [
+      "internal/writerrpc/client.go"
+    ]
+  },
+  {
+    "name": "Client Example",
+    "slug": "client-example",
+    "files": [
+      "examples/hertz_client/main.go"
+    ]
+  },
+  {
+    "name": "Other",
+    "slug": "other",
+    "files": [],
+    "children": [
+      {
+        "name": "Other — README.md",
+        "slug": "other-readme-md",
+        "files": [
+          "README.md"
+        ]
+      },
+      {
+        "name": "Other — api",
+        "slug": "other-api",
+        "files": [
+          "api/swagger.yaml"
+        ]
+      },
+      {
+        "name": "Other — build.sh",
+        "slug": "other-build-sh",
+        "files": [
+          "build.sh"
+        ]
+      },
+      {
+        "name": "Other — conf",
+        "slug": "other-conf",
+        "files": [
+          "conf/base.yml",
+          "conf/hertz.config.yaml"
+        ]
+      },
+      {
+        "name": "Other — docs",
+        "slug": "other-docs",
+        "files": [
+          "docs/integration.md"
+        ]
+      },
+      {
+        "name": "Other — go.mod",
+        "slug": "other-go-mod",
+        "files": [
+          "go.mod"
+        ]
+      },
+      {
+        "name": "Other — internal-api",
+        "slug": "other-internal-api",
+        "files": [
+          "internal/api/handlers_test.go"
+        ]
+      },
+      {
+        "name": "Other — internal-barrier",
+        "slug": "other-internal-barrier",
+        "files": [
+          "internal/barrier/barrier_test.go"
+        ]
+      },
+      {
+        "name": "Other — internal-collector",
+        "slug": "other-internal-collector",
+        "files": [
+          "internal/collector/collector_test.go"
+        ]
+      },
+      {
+        "name": "Other — internal-finalizer",
+        "slug": "other-internal-finalizer",
+        "files": [
+          "internal/finalizer/finalizer_test.go"
+        ]
+      },
+      {
+        "name": "Other — internal-job",
+        "slug": "other-internal-job",
+        "files": [
+          "internal/job/file_scanner_test.go",
+          "internal/job/manager_test.go"
+        ]
+      },
+      {
+        "name": "Other — internal-scheduler",
+        "slug": "other-internal-scheduler",
+        "files": [
+          "internal/scheduler/lambda_launcher_test.go"
+        ]
+      },
+      {
+        "name": "Other — internal-store",
+        "slug": "other-internal-store",
+        "files": [
+          "internal/store/store_test.go"
+        ]
+      },
+      {
+        "name": "Other — internal-writerrpc",
+        "slug": "other-internal-writerrpc",
+        "files": [
+          "internal/writerrpc/client_test.go"
+        ]
+      },
+      {
+        "name": "Other — script",
+        "slug": "other-script",
+        "files": [
+          "script/bootstrap.sh"
+        ]
+      }
+    ]
+  }
+]
